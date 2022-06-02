@@ -1,2 +1,2 @@
 # GoFileSharp
-A .NET library for the GoFile API written in C#
+A .NET library for the GoFile.io API written in C#
