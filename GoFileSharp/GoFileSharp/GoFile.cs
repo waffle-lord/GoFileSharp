@@ -1,7 +1,9 @@
 ﻿using GoFileSharp.Controllers;
+using GoFileSharp.Model.GoFileData;
 using GoFileSharp.Model.GoFileData.Wrappers;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 
@@ -46,15 +48,24 @@ namespace GoFileSharp
             return null;
         }
 
-
-
-        public static async Task<GoFileFile?> UploadFile(FileInfo file, Progress<int> progress = null)
+        public static async Task<GoFileFile?> UploadFileAsync(FileInfo file, IProgress<double> progress = null)
         {
-            var response = await _api.UploadFileAsync(file, ApiToken, progress);
+            var uploadResponse = await _api.UploadFileAsync(file, ApiToken, progress);
 
-            if(response.IsOK && response.Data != null)
+            if(!uploadResponse.IsOK || uploadResponse.Data == null)
             {
-                //TODO: WIP
+                return null;
+            }
+
+            var parentFolder = await GetContent(uploadResponse.Data.ParentFolderId);
+
+            if (parentFolder == null) return null;
+
+            var uploadedContent = parentFolder.Contents.SingleOrDefault(x => x.Id == uploadResponse.Data.FileId);
+
+            if(uploadedContent is FileData uploadedFile)
+            {
+                return new GoFileFile(uploadedFile, _api);
             }
 
             return null;

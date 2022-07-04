@@ -38,11 +38,15 @@ namespace GoFileSharp.Model.GoFileData
         public FileData(FileData file)
         {
             Id = file.Id;
+            Md5 = file.Md5;
             Name = file.Name;
             Size = file.Size;
+            Type = file.Type;
+            Link = file.Link;
+            MimeType = file.MimeType;
+            DirectLink = file.DirectLink;
             CreateTime = file.CreateTime;
             ServerChosen = file.ServerChosen;
-            DirectLink = file.DirectLink;
             DownloadCount = file.DownloadCount;
             ParentFolderId = file.ParentFolderId;
         }
