@@ -13,7 +13,7 @@ namespace GoFileSharp.Extensions
 		// some big brain nerd from Microsoft made this extension.
 		// It seems to work faily well: http://gist.github.com/dalexsoto/9fd3c5bdbe9f61a717d47c5843384d11
 		// I did modify it slightly though
-		public static async Task DownloadDataAsync(this HttpClient client, string requestUrl, Stream destination, IProgress<int> progress = null, CancellationToken cancellationToken = default(CancellationToken))
+		public static async Task DownloadDataAsync(this HttpClient client, string requestUrl, Stream destination, IProgress<double> progress = null, CancellationToken cancellationToken = default(CancellationToken))
 		{
 			using (var response = await client.GetAsync(requestUrl, HttpCompletionOption.ResponseHeadersRead))
 			{

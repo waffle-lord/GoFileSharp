@@ -17,7 +17,16 @@ namespace GoFileSharp.Controllers
     {
         private HttpClient _client = new HttpClient();
 
-        private void ProgressTracker(FileStream fileToTrack, IProgress<int> progress, ref bool keepTracking)
+        /// <summary>
+        /// A GoFile API Controller
+        /// </summary>
+        /// <param name="timeout">The HttpClient timeout. Defaults to 1 hour</param>
+        public GoFileController(TimeSpan? timeout = null)
+        {
+            _client.Timeout = timeout ?? TimeSpan.FromHours(1);
+        }
+
+        private void ProgressTracker(FileStream fileToTrack, IProgress<double> progress, ref bool keepTracking)
         {
             int prevPos = -1;
             while (keepTracking)
@@ -31,8 +40,6 @@ namespace GoFileSharp.Controllers
 
                 Thread.Sleep(100); //update every 100ms
             }
-
-            Console.WriteLine("exiting");
         }
 
         /// <summary>
@@ -78,7 +85,7 @@ namespace GoFileSharp.Controllers
                 return new GoFileResponse<ContentInfo>() { Status = "No response from GoFile" };
             }
 
-            if(response != null && !response.IsOK || response.Data == null)
+            if(response != null && !response.IsOK || response?.Data == null)
             {
                 return new GoFileResponse<ContentInfo>() { Status = response.Status };
             }
@@ -95,7 +102,7 @@ namespace GoFileSharp.Controllers
         /// <param name="token">The token to use for the uplaod</param>
         /// <param name="progress">A progress object to report progress updates to</param>
         /// <returns></returns>
-        public async Task<GoFileResponse<UploadInfo>> UploadFileAsync(System.IO.FileInfo file, string token = null, IProgress<int> progress = null)
+        public async Task<GoFileResponse<UploadInfo>> UploadFileAsync(System.IO.FileInfo file, string token = null, IProgress<double> progress = null)
         {
             file.Refresh();
 
@@ -115,29 +122,30 @@ namespace GoFileSharp.Controllers
 
             try
             {
-                using FileStream fileToUpload = file.OpenRead();
-
-                var form = new MultipartFormDataContent();
-
-                form.Add(new StreamContent(fileToUpload), "file", file.Name);
-
-                if (token != null)
-                    form.Add(new StringContent(token), "token");
-
-                var uploadRequest = new HttpRequestMessage(HttpMethod.Post, Routes.UploadFile(serverResponse.Data.Server))
+                using (FileStream fileToUpload = file.OpenRead())
                 {
-                    Content = form
-                };
+                    var form = new MultipartFormDataContent();
 
-                if (progress != null)
-                {
-                    new Task(new Action(() => { ProgressTracker(fileToUpload, progress, ref keepTracking); })).Start();
+                    form.Add(new StreamContent(fileToUpload), "file", file.Name);
+
+                    if (token != null)
+                        form.Add(new StringContent(token), "token");
+
+                    var uploadRequest = new HttpRequestMessage(HttpMethod.Post, Routes.UploadFile(serverResponse.Data.Server))
+                    {
+                        Content = form
+                    };
+
+                    if (progress != null)
+                    {
+                        new Task(new Action(() => { ProgressTracker(fileToUpload, progress, ref keepTracking); })).Start();
+                    }
+
+                    var result = _client.SendAsync(uploadRequest).Result.Content;
+
+                    return JsonConvert.DeserializeObject<GoFileResponse<UploadInfo>>(await result.ReadAsStringAsync())
+                           ?? new GoFileResponse<UploadInfo>() { Status = "Failed to deserialize response" };
                 }
-
-                var result = _client.SendAsync(uploadRequest).Result.Content;
-
-                return JsonConvert.DeserializeObject<GoFileResponse<UploadInfo>>(await result.ReadAsStringAsync())
-                       ?? new GoFileResponse<UploadInfo>() { Status = "Failed to deserialize response" };
             }
             catch (Exception ex)
             {
