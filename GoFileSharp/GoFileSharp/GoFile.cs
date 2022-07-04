@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 /* TODO:
  * [X] GetContent
- * [ ] UploadFile
+ * [X] UploadFile
  * [ ] GetMyFolder (gets the user's root folder, maybe a better name for this idk ...)
  * [ ] ...
  * [ ] probably should offer some kind of logging... but I'm kind of lazy so idk ...
