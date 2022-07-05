@@ -18,5 +18,25 @@
         {
             return $"{_baseUrl}/uploadFile".Replace("api", server);
         }
+
+        internal static string GetAccountDetails(string token)
+        {
+            return $"{_baseUrl}/getAccountDetails?token={token}&allDetails=true";
+        }
+
+        internal static string CreateFolder()
+        {
+            return $"{_baseUrl}/createFolder";
+        }
+
+        internal static string CopyContent()
+        {
+            return $"{_baseUrl}/copyContent";
+        }
+
+        internal static string DeleteContent()
+        {
+            return $"{_baseUrl}/deleteContent";
+        }
     }
 }

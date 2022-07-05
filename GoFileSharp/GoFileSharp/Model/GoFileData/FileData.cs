@@ -1,4 +1,5 @@
 ﻿using GoFileSharp.Interfaces;
+using GoFileSharp.Model.GoFileData.Wrappers;
 using Newtonsoft.Json;
 
 namespace GoFileSharp.Model.GoFileData

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace GoFileSharp.Model.GoFileData
 {
-    public class ContentInfo
+    public class ContentInfo : IContent
     {
         public string Id { get; set; }
 

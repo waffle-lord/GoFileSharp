@@ -48,9 +48,15 @@ namespace GoFileSharp
             return null;
         }
 
-        public static async Task<GoFileFile?> UploadFileAsync(FileInfo file, IProgress<double> progress = null)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="file"></param>
+        /// <param name="progress"></param>
+        /// <returns></returns>
+        public static async Task<GoFileFile?> UploadFileAsync(FileInfo file, IProgress<double> progress = null, string folderId = null)
         {
-            var uploadResponse = await _api.UploadFileAsync(file, ApiToken, progress);
+            var uploadResponse = await _api.UploadFileAsync(file, ApiToken, progress, folderId);
 
             if(!uploadResponse.IsOK || uploadResponse.Data == null)
             {
@@ -69,6 +75,22 @@ namespace GoFileSharp
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Get the account's root folder
+        /// </summary>
+        /// <returns></returns>
+        public static async Task<GoFileFolder?> GetMyRootFolder()
+        {
+            var accountDetailsResponse = await _api.GetAccountDetails(ApiToken);
+
+            if(!accountDetailsResponse.IsOK || accountDetailsResponse.Data == null)
+            {
+                return null;
+            }
+
+            return await GetContent(accountDetailsResponse.Data.RootFolder) ?? null;
         }
     }
 }

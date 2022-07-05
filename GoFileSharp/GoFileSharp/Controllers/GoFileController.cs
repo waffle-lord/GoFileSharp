@@ -3,10 +3,12 @@ using GoFileSharp.Model.GoFileData;
 using GoFileSharp.Model.HTTP;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using GoFileSharp.Extensions;
 
 namespace GoFileSharp.Controllers
 {
@@ -24,6 +26,17 @@ namespace GoFileSharp.Controllers
         public GoFileController(TimeSpan? timeout = null)
         {
             _client.Timeout = timeout ?? TimeSpan.FromHours(1);
+        }
+
+        private async Task<GoFileResponse<T>> DeserializeResponse<T>(HttpResponseMessage response) where T : class
+        {
+            return JsonConvert.DeserializeObject<GoFileResponse<T>>(await response.Content.ReadAsStringAsync())
+                   ?? new GoFileResponse<T>() { Status = "Failed to deserialize response" };
+        }
+
+        private GoFileResponse<T> GetFailedResponseStatus<T>(HttpResponseMessage? response) where T : class
+        {
+            return new GoFileResponse<T>() { Status = response?.StatusCode.ToString() ?? "No response from GoFile" };
         }
 
         private void ProgressTracker(FileStream fileToTrack, IProgress<double> progress, ref bool keepTracking)
@@ -48,17 +61,16 @@ namespace GoFileSharp.Controllers
         /// <returns>Returns the response from GoFile with the server info or null</returns>
         public async Task<GoFileResponse<ServerInfo>> GetServerAsync()
         {
-            var requestServer = new HttpRequestMessage(HttpMethod.Get, Routes.GetServer());
+            var serverRequest = new HttpRequestMessage(HttpMethod.Get, Routes.GetServer());
 
-            var result = await _client.SendAsync(requestServer);
+            var serverResponse = await _client.SendAsync(serverRequest);
 
-            if (result == null || result.Content == null)
+            if (serverResponse == null || serverResponse.Content == null)
             {
-                return new GoFileResponse<ServerInfo>() { Status = result?.StatusCode.ToString() ?? "No response from GoFile" };
+                return GetFailedResponseStatus<ServerInfo>(serverResponse);
             }
 
-            return JsonConvert.DeserializeObject<GoFileResponse<ServerInfo>>(await result.Content.ReadAsStringAsync())
-                   ?? new GoFileResponse<ServerInfo>() { Status = "Failed to deserialize response"};
+            return await DeserializeResponse<ServerInfo>(serverResponse);
         }
 
         /// <summary>
@@ -69,30 +81,65 @@ namespace GoFileSharp.Controllers
         /// <returns>Returns the response from GoFile with the content info or null</returns>
         public async Task<GoFileResponse<ContentInfo>> GetContentAsync(string contentId, string token)
         {
-            var requestContent = new HttpRequestMessage(HttpMethod.Get, Routes.GetContent(contentId, token));
+            var contentRequest = new HttpRequestMessage(HttpMethod.Get, Routes.GetContent(contentId, token));
 
-            var result = await _client.SendAsync(requestContent);
+            var contentResponse = await _client.SendAsync(contentRequest);
 
-            if(result == null || result.Content == null)
+            if(contentResponse == null || contentResponse.Content == null)
             {
-                return new GoFileResponse<ContentInfo>() { Status = result?.StatusCode.ToString() ?? "No response from GoFile" };
+                return GetFailedResponseStatus<ContentInfo>(contentResponse);
             }
 
-            var response = JsonConvert.DeserializeObject<GoFileResponse<ProxyContentInfo>>(await result.Content.ReadAsStringAsync());
+            var proxyContentResponse = JsonConvert.DeserializeObject<GoFileResponse<ProxyContentInfo>>(await contentResponse.Content.ReadAsStringAsync());
 
-            if(response == null)
+            if(proxyContentResponse == null)
             {
                 return new GoFileResponse<ContentInfo>() { Status = "No response from GoFile" };
             }
 
-            if(response != null && !response.IsOK || response?.Data == null)
+            if(proxyContentResponse != null && !proxyContentResponse.IsOK || proxyContentResponse?.Data == null)
             {
-                return new GoFileResponse<ContentInfo>() { Status = response.Status };
+                return new GoFileResponse<ContentInfo>() { Status = proxyContentResponse.Status };
             }
 
-            ContentInfoBuilder builder = new ContentInfoBuilder(response.Data);
+            ContentInfoBuilder builder = new ContentInfoBuilder(proxyContentResponse.Data);
 
-            return new GoFileResponse<ContentInfo>() { Status = response.Status, Data = builder.Build() };
+            return new GoFileResponse<ContentInfo>() { Status = proxyContentResponse.Status, Data = builder.Build() };
+        }
+
+        /// <summary>
+        /// Download a file
+        /// </summary>
+        /// <param name="directDownloadLink">The direct download link to the file</param>
+        /// <param name="destinationFile">The destination file info</param>
+        /// <param name="progress">A progress object to use to track download progress</param>
+        /// <returns></returns>
+        public async Task<GoFileResponse<ContentInfo>> DownloadFileAsync(string directDownloadLink, FileInfo destinationFile, bool overwrite = false, IProgress<double> progress = null)
+        {
+            try
+            {
+                if (destinationFile.Exists && !overwrite)
+                    return new GoFileResponse<ContentInfo>() { Status = $"File already exists: {destinationFile.FullName}" };
+
+                Directory.CreateDirectory(destinationFile.Directory.FullName);
+
+                using var fileStream = destinationFile.Open(FileMode.Create);
+
+                await _client.DownloadDataAsync(directDownloadLink, fileStream, progress);
+
+                destinationFile.Refresh();
+
+                string status = "Download failed";
+
+                if (destinationFile.Exists)
+                    status = "ok";
+
+                return new GoFileResponse<ContentInfo>() { Status = status};
+            }
+            catch(Exception ex)
+            {
+                return new GoFileResponse<ContentInfo>() { Status = ex.Message};
+            }
         }
 
         /// <summary>
@@ -102,7 +149,7 @@ namespace GoFileSharp.Controllers
         /// <param name="token">The token to use for the uplaod</param>
         /// <param name="progress">A progress object to report progress updates to</param>
         /// <returns></returns>
-        public async Task<GoFileResponse<UploadInfo>> UploadFileAsync(System.IO.FileInfo file, string token = null, IProgress<double> progress = null)
+        public async Task<GoFileResponse<UploadInfo>> UploadFileAsync(System.IO.FileInfo file, string token = null, IProgress<double> progress = null, string folderId = null)
         {
             file.Refresh();
 
@@ -131,6 +178,9 @@ namespace GoFileSharp.Controllers
                     if (token != null)
                         form.Add(new StringContent(token), "token");
 
+                    if ((folderId != null))
+                        form.Add(new StringContent(folderId), "folderId");
+
                     var uploadRequest = new HttpRequestMessage(HttpMethod.Post, Routes.UploadFile(serverResponse.Data.Server))
                     {
                         Content = form
@@ -141,10 +191,14 @@ namespace GoFileSharp.Controllers
                         new Task(new Action(() => { ProgressTracker(fileToUpload, progress, ref keepTracking); })).Start();
                     }
 
-                    var result = _client.SendAsync(uploadRequest).Result.Content;
+                    var uploadResponse = await _client.SendAsync(uploadRequest);
 
-                    return JsonConvert.DeserializeObject<GoFileResponse<UploadInfo>>(await result.ReadAsStringAsync())
-                           ?? new GoFileResponse<UploadInfo>() { Status = "Failed to deserialize response" };
+                    if(uploadResponse == null || uploadResponse.Content == null)
+                    {
+                        return GetFailedResponseStatus<UploadInfo>(uploadResponse);
+                    }
+
+                    return await DeserializeResponse<UploadInfo>(uploadResponse);
                 }
             }
             catch (Exception ex)
@@ -155,6 +209,97 @@ namespace GoFileSharp.Controllers
             {
                 keepTracking = false;
             }
+        }
+
+        /// <summary>
+        /// Get the account details for the token provided
+        /// </summary>
+        /// <param name="token">The token to get the account details of</param>
+        /// <returns></returns>
+        public async Task<GoFileResponse<AccountDetails>> GetAccountDetails(string token)
+        {
+            var accountRequest = new HttpRequestMessage(HttpMethod.Get, Routes.GetAccountDetails(token));
+
+            var accountResponse = await _client.SendAsync(accountRequest);
+
+            if(accountResponse == null || accountResponse.Content == null)
+            {
+                return GetFailedResponseStatus<AccountDetails>(accountResponse);
+            }
+
+            return await DeserializeResponse<AccountDetails>(accountResponse);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="token"></param>
+        /// <param name="parentFolderId"></param>
+        /// <param name="folderName"></param>
+        /// <returns></returns>
+        public async Task<GoFileResponse<ContentInfo>> CreateFolder(string token, string parentFolderId, string folderName)
+        {
+            var createFolderRequest = new HttpRequestMessage(HttpMethod.Put, Routes.CreateFolder());
+
+            var requestDictionary = new Dictionary<string, string>();
+
+            requestDictionary.Add("token", token);
+            requestDictionary.Add("parentFolderId", parentFolderId);
+            requestDictionary.Add("folderName", folderName);
+
+            createFolderRequest.Content = new FormUrlEncodedContent(requestDictionary);
+
+            var createFolderResponse = await _client.SendAsync(createFolderRequest);
+
+            if(createFolderRequest == null || createFolderRequest.Content == null)
+            {
+                return GetFailedResponseStatus<ContentInfo>(createFolderResponse);
+            }
+
+            return await DeserializeResponse<ContentInfo>(createFolderResponse);
+        }
+
+        public async Task<GoFileResponse<ContentInfo>> CopyContent(string token, string[] contentIds, string destinationFolderId)
+        {
+            var copyRequest = new HttpRequestMessage(HttpMethod.Put, Routes.CopyContent());
+
+            var requestDictionary = new Dictionary<string, string>();
+
+            requestDictionary.Add("token", token);
+            requestDictionary.Add("contentsId", string.Join(',', contentIds));
+            requestDictionary.Add("folderIdDest", destinationFolderId);
+
+            copyRequest.Content = new FormUrlEncodedContent(requestDictionary);
+
+            var copyResponse = await _client.SendAsync(copyRequest);
+
+            if(copyResponse == null || copyResponse.Content == null)
+            {
+                return GetFailedResponseStatus<ContentInfo>(copyResponse);
+            }
+
+            return await DeserializeResponse<ContentInfo>(copyResponse);
+        }
+
+        public async Task<GoFileResponse<ContentInfo>> DeleteContent(string token, string[] contentIds)
+        {
+            var deleteRequest = new HttpRequestMessage(HttpMethod.Delete, Routes.DeleteContent());
+
+            var requestDictionary = new Dictionary<string, string>();
+
+            requestDictionary.Add("token", token);
+            requestDictionary.Add("contentsId", string.Join(',', contentIds));
+
+            deleteRequest.Content = new FormUrlEncodedContent(requestDictionary);
+
+            var deleteResponse = await _client.SendAsync(deleteRequest);
+
+            if(deleteResponse == null || deleteResponse.Content == null)
+            {
+                return GetFailedResponseStatus<ContentInfo>(deleteResponse);
+            }
+
+            return await DeserializeResponse<ContentInfo>(deleteResponse);
         }
     }
 }
