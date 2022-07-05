@@ -81,7 +81,7 @@ namespace GoFileSharp
         /// Get the account's root folder
         /// </summary>
         /// <returns></returns>
-        public static async Task<GoFileFolder?> GetMyRootFolder()
+        public static async Task<GoFileFolder?> GetMyRootFolderAsync()
         {
             var accountDetailsResponse = await _api.GetAccountDetails(ApiToken);
 
