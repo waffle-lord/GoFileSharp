@@ -49,11 +49,11 @@ namespace GoFileSharp
         }
 
         /// <summary>
-        /// 
+        /// Upload a file to Gofile
         /// </summary>
-        /// <param name="file"></param>
+        /// <param name="file">The file to upload</param>
         /// <param name="progress"></param>
-        /// <returns></returns>
+        /// <returns>Returns the uploaded file</returns>
         public static async Task<GoFileFile?> UploadFileAsync(FileInfo file, IProgress<double> progress = null, string folderId = null)
         {
             var uploadResponse = await _api.UploadFileAsync(file, ApiToken, progress, folderId);
@@ -80,7 +80,7 @@ namespace GoFileSharp
         /// <summary>
         /// Get the account's root folder
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Returns the root folder</returns>
         public static async Task<GoFileFolder?> GetMyRootFolderAsync()
         {
             var accountDetailsResponse = await _api.GetAccountDetails(ApiToken);
