@@ -38,5 +38,10 @@
         {
             return $"{_baseUrl}/deleteContent";
         }
+
+        internal static string SetOption()
+        {
+            return $"{_baseUrl}/setOption";
+        }
     }
 }
