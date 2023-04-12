@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -138,5 +139,40 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
 
             return copyResponse.IsOK;
         }
+
+        /// <summary>
+        /// Set the tags for this folder
+        /// </summary>
+        /// <param name="tags">the tags to set on this folder</param>
+        /// <returns>Returns true is the option was set, otherwise false</returns>
+        public async Task<bool> SetTags(List<string> tags) => await _api.SetOption(GoFile.ApiToken, Id, FolderContentOption.Tags(tags));
+
+        /// <summary>
+        /// Set the password for this folder
+        /// </summary>
+        /// <param name="password"></param>
+        /// <returns>Returns true is the option was set, otherwise false</returns>
+        public async Task<bool> SetPassword(string password) => await _api.SetOption(GoFile.ApiToken, Id, FolderContentOption.Password(password));
+
+        /// <summary>
+        /// Set the expiration date of the folder
+        /// </summary>
+        /// <param name="date"></param>
+        /// <returns>Returns true is the option was set, otherwise false</returns>
+        public async Task<bool> SetExpire(DateTimeOffset date) => await _api.SetOption(GoFile.ApiToken, Id, FolderContentOption.Expire(date));
+
+        /// <summary>
+        /// Set the public flag of this folder
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns>Returns true is the option was set, otherwise false</returns>
+        public async Task<bool> SetPublic(bool value) => await _api.SetOption(GoFile.ApiToken, Id, FolderContentOption.Public(value));
+
+        /// <summary>
+        /// Set the description of this folder
+        /// </summary>
+        /// <param name="description"></param>
+        /// <returns>Returns true is the option was set, otherwise false</returns>
+        public async Task<bool> SetDescription(string description) => await _api.SetOption(GoFile.ApiToken, Id, FolderContentOption.Description(description));
     }
 }

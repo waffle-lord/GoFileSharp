@@ -52,5 +52,12 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
 
             return result.IsOK;
         }
+
+        /// <summary>
+        /// Set this file's direct link option
+        /// </summary>
+        /// <param name="value">True to enable direct link, false to disable</param>
+        /// <returns>Returns true is the option was updated successfully, otherwise false</returns>
+        public async Task<bool> SetDirectLink(bool value) => await _api.SetOption(GoFile.ApiToken, Id, FileContentOption.DirectLink(value));
     }
 }
