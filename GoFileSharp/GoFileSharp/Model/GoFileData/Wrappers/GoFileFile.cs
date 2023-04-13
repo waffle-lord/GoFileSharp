@@ -1,7 +1,11 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using GoFileSharp.Controllers;
+using GoFileSharp.Interfaces;
+using GoFileSharp.Model.HTTP;
+using Newtonsoft.Json.Linq;
 
 namespace GoFileSharp.Model.GoFileData.Wrappers
 {
@@ -16,6 +20,34 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         public GoFileFile(FileData file, GoFileController controller) : base(file)
         {
             _api = controller;
+        }
+
+        private async Task<bool> SetOptionAndRefresh(IContentOption option)
+        {
+            var status = await _api.SetOption(GoFile.ApiToken, Id, option);
+
+            if (status) await Refresh();
+
+            return status;
+        }
+
+        /// <summary>
+        /// Refresh this files information
+        /// </summary>
+        /// <returns></returns>
+        public async Task<bool> Refresh()
+        {
+            var parent = await GoFile.GetContent(ParentFolderId);
+
+            if (parent == null) return false;
+
+            var thisFile = parent.FindFile(Name);
+
+            if(thisFile == null) return false;
+
+            base.Refresh(thisFile);
+
+            return true;
         }
 
         /// <summary>
@@ -58,6 +90,6 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// </summary>
         /// <param name="value">True to enable direct link, false to disable</param>
         /// <returns>Returns true is the option was updated successfully, otherwise false</returns>
-        public async Task<bool> SetDirectLink(bool value) => await _api.SetOption(GoFile.ApiToken, Id, FileContentOption.DirectLink(value));
+        public async Task<bool> SetDirectLink(bool value) => await SetOptionAndRefresh(FileContentOption.DirectLink(value));
     }
 }

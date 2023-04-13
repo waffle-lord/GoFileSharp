@@ -30,6 +30,30 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
             _api = controller;
         }
 
+        private async Task<bool> SetOptionAndRefresh(IContentOption option)
+        {
+            var status = await _api.SetOption(GoFile.ApiToken, Id, option);
+
+            if (status) await Refresh();
+
+            return status;
+        }
+
+        /// <summary>
+        /// Refresh this folders information
+        /// </summary>
+        /// <returns></returns>
+        public async Task<bool> Refresh()
+        {
+            var thisFolder = await GoFile.GetContent(Id);
+
+            if(thisFolder == null) return false;
+
+            base.Refresh(thisFolder);
+
+            return true;
+        }
+
         /// <summary>
         /// Create a new subfolder in this folder
         /// </summary>
@@ -145,34 +169,34 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// </summary>
         /// <param name="tags">the tags to set on this folder</param>
         /// <returns>Returns true is the option was set, otherwise false</returns>
-        public async Task<bool> SetTags(List<string> tags) => await _api.SetOption(GoFile.ApiToken, Id, FolderContentOption.Tags(tags));
+        public async Task<bool> SetTags(List<string> tags) => await SetOptionAndRefresh(FolderContentOption.Tags(tags));
 
         /// <summary>
         /// Set the password for this folder
         /// </summary>
         /// <param name="password"></param>
         /// <returns>Returns true is the option was set, otherwise false</returns>
-        public async Task<bool> SetPassword(string password) => await _api.SetOption(GoFile.ApiToken, Id, FolderContentOption.Password(password));
+        public async Task<bool> SetPassword(string password) => await SetOptionAndRefresh(FolderContentOption.Password(password));
 
         /// <summary>
         /// Set the expiration date of the folder
         /// </summary>
         /// <param name="date"></param>
         /// <returns>Returns true is the option was set, otherwise false</returns>
-        public async Task<bool> SetExpire(DateTimeOffset date) => await _api.SetOption(GoFile.ApiToken, Id, FolderContentOption.Expire(date));
+        public async Task<bool> SetExpire(DateTimeOffset date) => await SetOptionAndRefresh(FolderContentOption.Expire(date));
 
         /// <summary>
         /// Set the public flag of this folder
         /// </summary>
         /// <param name="value"></param>
         /// <returns>Returns true is the option was set, otherwise false</returns>
-        public async Task<bool> SetPublic(bool value) => await _api.SetOption(GoFile.ApiToken, Id, FolderContentOption.Public(value));
+        public async Task<bool> SetPublic(bool value) => await SetOptionAndRefresh(FolderContentOption.Public(value));
 
         /// <summary>
         /// Set the description of this folder
         /// </summary>
         /// <param name="description"></param>
         /// <returns>Returns true is the option was set, otherwise false</returns>
-        public async Task<bool> SetDescription(string description) => await _api.SetOption(GoFile.ApiToken, Id, FolderContentOption.Description(description));
+        public async Task<bool> SetDescription(string description) => await SetOptionAndRefresh(FolderContentOption.Description(description));
     }
 }

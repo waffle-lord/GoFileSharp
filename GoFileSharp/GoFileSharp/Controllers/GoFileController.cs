@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using GoFileSharp.Extensions;
 using GoFileSharp.Interfaces;
+using GoFileSharp.Model.GoFileData.Wrappers;
 
 namespace GoFileSharp.Controllers
 {

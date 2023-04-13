@@ -1,4 +1,5 @@
 ﻿using GoFileSharp.Controllers;
+using GoFileSharp.Interfaces;
 using GoFileSharp.Model.GoFileData;
 using GoFileSharp.Model.GoFileData.Wrappers;
 using System;
@@ -48,6 +49,40 @@ namespace GoFileSharp
             return null;
         }
 
+        private static async Task<GoFileFile?> TryGetUplaodedFile(UploadInfo uploadInfo)
+        {
+            // NOTE: This is mainly due to GoFile folder data not updating immediately after an upload :(
+            // up to 1 min to try and get uploaded file
+            TimeSpan interval = TimeSpan.FromSeconds(10);
+            int maxTries = 10;
+
+            IContent? uploadedContent = null;
+
+            while (maxTries > 0)
+            {
+                var parentFolder = await GetContent(uploadInfo.ParentFolderId);
+
+                if (parentFolder == null) return null;
+
+                uploadedContent = parentFolder.Contents.SingleOrDefault(x => x.Id == uploadInfo.FileId);
+
+                if (uploadedContent != null) break;
+
+                maxTries--;
+
+                await Task.Delay(interval);
+            }
+
+            if (uploadedContent == null) return null;
+
+            if (uploadedContent is FileData uploadedFile)
+            {
+                return new GoFileFile(uploadedFile, _api);
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Upload a file to Gofile
         /// </summary>
@@ -63,18 +98,7 @@ namespace GoFileSharp
                 return null;
             }
 
-            var parentFolder = await GetContent(uploadResponse.Data.ParentFolderId);
-
-            if (parentFolder == null) return null;
-
-            var uploadedContent = parentFolder.Contents.SingleOrDefault(x => x.Id == uploadResponse.Data.FileId);
-
-            if(uploadedContent is FileData uploadedFile)
-            {
-                return new GoFileFile(uploadedFile, _api);
-            }
-
-            return null;
+            return await TryGetUplaodedFile(uploadResponse.Data);
         }
 
         /// <summary>
