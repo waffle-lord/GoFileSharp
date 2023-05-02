@@ -81,7 +81,7 @@ namespace GoFileSharp.Controllers
         /// <param name="contentId">The contentId of the folder to request content info for</param>
         /// <param name="token">The token to use with this request</param>
         /// <returns>Returns the response from GoFile with the content info or null</returns>
-        public async Task<GoFileResponse<ContentInfo>> GetContentAsync(string contentId, string token)
+        public async Task<GoFileResponse<IContent>> GetContentAsync(string contentId, string token)
         {
             var contentRequest = new HttpRequestMessage(HttpMethod.Get, Routes.GetContent(contentId, token));
 
@@ -89,24 +89,24 @@ namespace GoFileSharp.Controllers
 
             if(contentResponse == null || contentResponse.Content == null)
             {
-                return GetFailedResponseStatus<ContentInfo>(contentResponse);
+                return GetFailedResponseStatus<IContent>(contentResponse);
             }
 
             var proxyContentResponse = JsonConvert.DeserializeObject<GoFileResponse<ProxyContentInfo>>(await contentResponse.Content.ReadAsStringAsync());
 
             if(proxyContentResponse == null)
             {
-                return new GoFileResponse<ContentInfo>() { Status = "No response from GoFile" };
+                return new GoFileResponse<IContent>() { Status = "No response from GoFile" };
             }
 
             if(proxyContentResponse != null && !proxyContentResponse.IsOK || proxyContentResponse?.Data == null)
             {
-                return new GoFileResponse<ContentInfo>() { Status = proxyContentResponse.Status };
+                return new GoFileResponse<IContent>() { Status = proxyContentResponse.Status };
             }
 
             ContentInfoBuilder builder = new ContentInfoBuilder(proxyContentResponse.Data);
 
-            return new GoFileResponse<ContentInfo>() { Status = proxyContentResponse.Status, Data = builder.Build() };
+            return new GoFileResponse<IContent>() { Status = proxyContentResponse.Status, Data = builder.Build() };
         }
 
         /// <summary>

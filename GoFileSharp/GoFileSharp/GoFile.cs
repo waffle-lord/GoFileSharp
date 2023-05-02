@@ -31,11 +31,11 @@ namespace GoFileSharp
         private static GoFileController _api = new GoFileController();
 
         /// <summary>
-        /// Get a <see cref="GoFileFolder"/> and it's contents
+        /// Get <see cref="IContent"/> from an ID
         /// </summary>
         /// <param name="contentId"></param>
-        /// <returns>Returns the folder object or null</returns>
-        public static async Task<GoFileFolder?> GetContent(string contentId)
+        /// <returns>Returns content of the id</returns>
+        public static async Task<IContent?> GetContent(string contentId)
         {
             if (ApiToken == null) return null;
 
@@ -43,7 +43,49 @@ namespace GoFileSharp
 
             if(response.IsOK && response.Data != null)
             {
-                return new GoFileFolder(response.Data, _api);
+                if(response.Data is ContentInfo folder)
+                {
+                    return new GoFileFolder(folder, _api);
+                }
+
+                if(response.Data is FileData file)
+                {
+                    return new GoFileFile(file, _api);
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Get a folder object from an ID
+        /// </summary>
+        /// <param name="contentId"></param>
+        /// <returns></returns>
+        public static async Task<GoFileFolder?> GetFolder(string contentId)
+        {
+            var folder = await GetContent(contentId);
+
+            if(folder is GoFileFolder gofileFolder)
+            {
+                return gofileFolder;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Get a file object from an ID
+        /// </summary>
+        /// <param name="contentId"></param>
+        /// <returns></returns>
+        public static async Task<GoFileFile?> GetFile(string contentId)
+        {
+            var folder = await GetContent(contentId);
+
+            if (folder is GoFileFile gofileFile)
+            {
+                return gofileFile;
             }
 
             return null;
@@ -60,7 +102,7 @@ namespace GoFileSharp
 
             while (maxTries > 0)
             {
-                var parentFolder = await GetContent(uploadInfo.ParentFolderId);
+                var parentFolder = await GetFolder(uploadInfo.ParentFolderId);
 
                 if (parentFolder == null) return null;
 
@@ -114,7 +156,7 @@ namespace GoFileSharp
                 return null;
             }
 
-            return await GetContent(accountDetailsResponse.Data.RootFolder) ?? null;
+            return await GetFolder(accountDetailsResponse.Data.RootFolder) ?? null;
         }
     }
 }

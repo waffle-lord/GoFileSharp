@@ -32,7 +32,7 @@ namespace GoFileSharp.Model.GoFileData
 
         public string Link { get; set; }
 
-        public void Refresh(FileData file)
+        public void Update(FileData file)
         {
             Id = file.Id;
             Md5 = file.Md5;
@@ -54,7 +54,7 @@ namespace GoFileSharp.Model.GoFileData
 
         public FileData(FileData file)
         {
-            Refresh(file);
+            Update(file);
         }
     }
 }

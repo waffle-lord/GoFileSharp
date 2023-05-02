@@ -17,7 +17,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
     {
         private GoFileController _api;
 
-        public GoFileFile(FileData file, GoFileController controller) : base(file)
+        public GoFileFile(FileData content, GoFileController controller) : base(content)
         {
             _api = controller;
         }
@@ -37,7 +37,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// <returns></returns>
         public async Task<bool> Refresh()
         {
-            var parent = await GoFile.GetContent(ParentFolderId);
+            var parent = await GoFile.GetFolder(ParentFolderId);
 
             if (parent == null) return false;
 
@@ -45,7 +45,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
 
             if(thisFile == null) return false;
 
-            base.Refresh(thisFile);
+            base.Update(thisFile);
 
             return true;
         }
