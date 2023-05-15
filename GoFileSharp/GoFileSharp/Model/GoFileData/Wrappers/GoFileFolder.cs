@@ -1,19 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using GoFileSharp.Controllers;
 using GoFileSharp.Interfaces;
 
-/* TODO:
- * [X] upload to folder
- * [X] create folder
- * [X] copy folder to
- * [X] copy into folder
- * [X] delete folder
- * [X] get folder
- * [ ] set folder options
- */
 
 namespace GoFileSharp.Model.GoFileData.Wrappers
 {
@@ -27,6 +19,30 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         public GoFileFolder(ContentInfo content, GoFileController controller) : base(content)
         {
             _api = controller;
+        }
+
+        private async Task<bool> SetOptionAndRefresh(IContentOption option)
+        {
+            var status = await _api.SetOption(GoFile.ApiToken, Id, option);
+
+            if (status) await Refresh();
+
+            return status;
+        }
+
+        /// <summary>
+        /// Refresh this folders information
+        /// </summary>
+        /// <returns></returns>
+        public async Task<bool> Refresh()
+        {
+            var thisFolder = await GoFile.GetFolder(Id, true);
+
+            if(thisFolder == null) return false;
+
+            base.Refresh(thisFolder);
+
+            return true;
         }
 
         /// <summary>
@@ -43,7 +59,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
                 return null;
             }
 
-            var contentInfo = await GoFile.GetContent(createFolderResponse.Data.Id);
+            var contentInfo = await GoFile.GetFolder(createFolderResponse.Data.Id);
 
             if(contentInfo == null)
             {
@@ -81,7 +97,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
 
             if(folderContent is FolderData folderData)
             {
-                var folder = await GoFile.GetContent(folderData.Id);
+                var folder = await GoFile.GetFolder(folderData.Id);
 
                 if(folder != null)
                 {
@@ -138,5 +154,40 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
 
             return copyResponse.IsOK;
         }
+
+        /// <summary>
+        /// Set the tags for this folder
+        /// </summary>
+        /// <param name="tags">the tags to set on this folder</param>
+        /// <returns>Returns true is the option was set, otherwise false</returns>
+        public async Task<bool> SetTags(List<string> tags) => await SetOptionAndRefresh(FolderContentOption.Tags(tags));
+
+        /// <summary>
+        /// Set the password for this folder
+        /// </summary>
+        /// <param name="password"></param>
+        /// <returns>Returns true is the option was set, otherwise false</returns>
+        public async Task<bool> SetPassword(string password) => await SetOptionAndRefresh(FolderContentOption.Password(password));
+
+        /// <summary>
+        /// Set the expiration date of the folder
+        /// </summary>
+        /// <param name="date"></param>
+        /// <returns>Returns true is the option was set, otherwise false</returns>
+        public async Task<bool> SetExpire(DateTimeOffset date) => await SetOptionAndRefresh(FolderContentOption.Expire(date));
+
+        /// <summary>
+        /// Set the public flag of this folder
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns>Returns true is the option was set, otherwise false</returns>
+        public async Task<bool> SetPublic(bool value) => await SetOptionAndRefresh(FolderContentOption.Public(value));
+
+        /// <summary>
+        /// Set the description of this folder
+        /// </summary>
+        /// <param name="description"></param>
+        /// <returns>Returns true is the option was set, otherwise false</returns>
+        public async Task<bool> SetDescription(string description) => await SetOptionAndRefresh(FolderContentOption.Description(description));
     }
 }

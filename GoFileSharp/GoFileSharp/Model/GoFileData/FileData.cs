@@ -32,11 +32,7 @@ namespace GoFileSharp.Model.GoFileData
 
         public string Link { get; set; }
 
-        public FileData()
-        {
-        }
-
-        public FileData(FileData file)
+        public void Update(FileData file)
         {
             Id = file.Id;
             Md5 = file.Md5;
@@ -50,6 +46,15 @@ namespace GoFileSharp.Model.GoFileData
             ServerChosen = file.ServerChosen;
             DownloadCount = file.DownloadCount;
             ParentFolderId = file.ParentFolderId;
+        }
+
+        public FileData()
+        {
+        }
+
+        public FileData(FileData file)
+        {
+            Update(file);
         }
     }
 }

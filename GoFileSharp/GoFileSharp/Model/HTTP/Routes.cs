@@ -9,9 +9,13 @@
             return $"{_baseUrl}/getServer";
         }
 
-        internal static string GetContent(string contentId, string token)
+        internal static string GetContent(string contentId, string token, bool noCache)
         {
-            return $"{_baseUrl}/getContent?contentId={contentId}&token={token}";
+            string route = $"{_baseUrl}/getContent?contentId={contentId}&token={token}";
+
+            if (noCache) route += "&cache=false";
+
+            return route;
         }
 
         internal static string UploadFile(string server)
@@ -37,6 +41,11 @@
         internal static string DeleteContent()
         {
             return $"{_baseUrl}/deleteContent";
+        }
+
+        internal static string SetOption()
+        {
+            return $"{_baseUrl}/setOption";
         }
     }
 }
