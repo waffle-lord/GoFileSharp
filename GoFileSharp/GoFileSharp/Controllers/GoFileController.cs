@@ -81,9 +81,9 @@ namespace GoFileSharp.Controllers
         /// <param name="contentId">The contentId of the folder to request content info for</param>
         /// <param name="token">The token to use with this request</param>
         /// <returns>Returns the response from GoFile with the content info or null</returns>
-        public async Task<GoFileResponse<IContent>> GetContentAsync(string contentId, string token)
+        public async Task<GoFileResponse<IContent>> GetContentAsync(string contentId, string token, bool noCache = false)
         {
-            var contentRequest = new HttpRequestMessage(HttpMethod.Get, Routes.GetContent(contentId, token));
+            var contentRequest = new HttpRequestMessage(HttpMethod.Get, Routes.GetContent(contentId, token, noCache));
 
             var contentResponse = await _client.SendAsync(contentRequest);
 

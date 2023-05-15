@@ -23,15 +23,9 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         {
             var status = await _api.SetOption(GoFile.ApiToken, Id, option);
 
-            if (status)
-            {
-                // HACK: The API takes a long time to reflect changes made, sometime almost a full minute. This delay is a hack to try to get good data back
-                // HACK: Hopefully they fix this, because it wasn't like this before :(
-                await Task.Delay(30000);
-                await Refresh();
-            }
+            if (status) await Refresh();
 
-                return status;
+            return status;
         }
 
         /// <summary>
@@ -40,7 +34,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// <returns></returns>
         public async Task<bool> Refresh()
         {
-            var parent = await GoFile.GetFolder(ParentFolderId);
+            var parent = await GoFile.GetFolder(ParentFolderId, true);
 
             if (parent == null) return false;
 

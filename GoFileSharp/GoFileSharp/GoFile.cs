@@ -35,11 +35,11 @@ namespace GoFileSharp
         /// </summary>
         /// <param name="contentId"></param>
         /// <returns>Returns content of the id</returns>
-        public static async Task<IContent?> GetContent(string contentId)
+        public static async Task<IContent?> GetContent(string contentId, bool noCache = false)
         {
             if (ApiToken == null) return null;
 
-            var response = await _api.GetContentAsync(contentId, ApiToken);
+            var response = await _api.GetContentAsync(contentId, ApiToken, noCache);
 
             if(response.IsOK && response.Data != null)
             {
@@ -62,9 +62,9 @@ namespace GoFileSharp
         /// </summary>
         /// <param name="contentId"></param>
         /// <returns></returns>
-        public static async Task<GoFileFolder?> GetFolder(string contentId)
+        public static async Task<GoFileFolder?> GetFolder(string contentId, bool noCache = false)
         {
-            var folder = await GetContent(contentId);
+            var folder = await GetContent(contentId, noCache);
 
             if(folder is GoFileFolder gofileFolder)
             {
@@ -79,9 +79,9 @@ namespace GoFileSharp
         /// </summary>
         /// <param name="contentId"></param>
         /// <returns></returns>
-        public static async Task<GoFileFile?> GetFile(string contentId)
+        public static async Task<GoFileFile?> GetFile(string contentId, bool noCache = false)
         {
-            var folder = await GetContent(contentId);
+            var folder = await GetContent(contentId, noCache);
 
             if (folder is GoFileFile gofileFile)
             {
@@ -102,7 +102,7 @@ namespace GoFileSharp
 
             while (maxTries > 0)
             {
-                var parentFolder = await GetFolder(uploadInfo.ParentFolderId);
+                var parentFolder = await GetFolder(uploadInfo.ParentFolderId, true);
 
                 if (parentFolder == null) return null;
 
