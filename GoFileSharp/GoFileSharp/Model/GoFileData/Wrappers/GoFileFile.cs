@@ -1,11 +1,8 @@
 ﻿using System;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using GoFileSharp.Controllers;
 using GoFileSharp.Interfaces;
-using GoFileSharp.Model.HTTP;
-using Newtonsoft.Json.Linq;
 
 namespace GoFileSharp.Model.GoFileData.Wrappers
 {
@@ -26,9 +23,15 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         {
             var status = await _api.SetOption(GoFile.ApiToken, Id, option);
 
-            if (status) await Refresh();
+            if (status)
+            {
+                // HACK: The API takes a long time to reflect changes made, sometime almost a full minute. This delay is a hack to try to get good data back
+                // HACK: Hopefully they fix this, because it wasn't like this before :(
+                await Task.Delay(30000);
+                await Refresh();
+            }
 
-            return status;
+                return status;
         }
 
         /// <summary>

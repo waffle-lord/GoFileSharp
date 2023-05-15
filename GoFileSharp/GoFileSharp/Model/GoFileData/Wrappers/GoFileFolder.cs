@@ -6,15 +6,6 @@ using System.Threading.Tasks;
 using GoFileSharp.Controllers;
 using GoFileSharp.Interfaces;
 
-/* TODO:
- * [X] upload to folder
- * [X] create folder
- * [X] copy folder to
- * [X] copy into folder
- * [X] delete folder
- * [X] get folder
- * [ ] set folder options
- */
 
 namespace GoFileSharp.Model.GoFileData.Wrappers
 {
@@ -34,7 +25,13 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         {
             var status = await _api.SetOption(GoFile.ApiToken, Id, option);
 
-            if (status) await Refresh();
+            if (status)
+            {
+                // HACK: The API takes a long time to reflect changes made, sometime almost a full minute. This delay is a hack to try to get good data back
+                // HACK: Hopefully they fix this, because it wasn't like this before :(
+                await Task.Delay(30000);
+                await Refresh();
+            }
 
             return status;
         }

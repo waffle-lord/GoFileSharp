@@ -15,7 +15,7 @@ namespace GoFileSharp.Model.GoFileData
             Value = value;
         }
 
-        public static FolderContentOption Public(bool value) => new FolderContentOption("public", value.ToString());
+        public static FolderContentOption Public(bool value) => new FolderContentOption("public", value.ToString().ToLower());
 
         public static FolderContentOption Password(string password) => new FolderContentOption("password", password);
 
