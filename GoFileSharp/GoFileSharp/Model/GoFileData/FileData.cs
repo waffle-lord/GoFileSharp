@@ -27,7 +27,12 @@ namespace GoFileSharp.Model.GoFileData
 
         [JsonProperty("serverchoosen")] //typo in API
         public string ServerChosen { get; set; }
-
+        
+        /// <summary>
+        /// This property has no meaning at this time, but it exists on the API
+        /// </summary>
+        /// <remarks>You probably want to use <see cref="DirectLink"/> instead</remarks>
+        public string[] DirectLinks { get; set; }
         public string DirectLink { get; set; }
 
         public string Link { get; set; }
@@ -42,6 +47,7 @@ namespace GoFileSharp.Model.GoFileData
             Link = file.Link;
             MimeType = file.MimeType;
             DirectLink = file.DirectLink;
+            DirectLinks = file.DirectLinks;
             CreateTime = file.CreateTime;
             ServerChosen = file.ServerChosen;
             DownloadCount = file.DownloadCount;

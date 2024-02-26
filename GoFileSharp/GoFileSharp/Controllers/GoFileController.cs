@@ -92,7 +92,9 @@ namespace GoFileSharp.Controllers
                 return GetFailedResponseStatus<IContent>(contentResponse);
             }
 
-            var proxyContentResponse = JsonConvert.DeserializeObject<GoFileResponse<ProxyContentInfo>>(await contentResponse.Content.ReadAsStringAsync());
+            var content = await contentResponse.Content.ReadAsStringAsync();
+            
+            var proxyContentResponse = JsonConvert.DeserializeObject<GoFileResponse<ProxyContentInfo>>(content);
 
             if(proxyContentResponse == null)
             {

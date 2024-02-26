@@ -35,7 +35,7 @@ namespace GoFileSharp
         /// </summary>
         /// <param name="contentId"></param>
         /// <returns>Returns content of the id</returns>
-        public static async Task<IContent?> GetContent(string contentId, bool noCache = false)
+        private static async Task<IContent?> GetContent(string contentId, bool noCache = false)
         {
             if (ApiToken == null) return null;
 
@@ -74,22 +74,23 @@ namespace GoFileSharp
             return null;
         }
 
-        /// <summary>
-        /// Get a file object from an ID
-        /// </summary>
-        /// <param name="contentId"></param>
-        /// <returns></returns>
-        public static async Task<GoFileFile?> GetFile(string contentId, bool noCache = false)
-        {
-            var folder = await GetContent(contentId, noCache);
-
-            if (folder is GoFileFile gofileFile)
-            {
-                return gofileFile;
-            }
-
-            return null;
-        }
+        // todo: getting files via content ID on the API is not allowed?
+        // /// <summary>
+        // /// Get a file object from an ID
+        // /// </summary>
+        // /// <param name="contentId"></param>
+        // /// <returns></returns>
+        // public static async Task<GoFileFile?> GetFile(string contentId, bool noCache = false)
+        // {
+        //     var file = await GetContent(contentId, noCache);
+        //
+        //     if (file is GoFileFile gofileFile)
+        //     {
+        //         return gofileFile;
+        //     }
+        //
+        //     return null;
+        // }
 
         private static async Task<GoFileFile?> TryGetUplaodedFile(UploadInfo uploadInfo)
         {
