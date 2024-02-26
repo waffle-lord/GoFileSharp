@@ -7,12 +7,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0c26aabe-eb45-48dc-b2c9-3b95d3e539ba" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/GoFileSharp.sln" beforeDir="false" afterPath="$PROJECT_DIR$/GoFileSharp.sln" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/GoFileSharp/Controllers/GoFileController.cs" beforeDir="false" afterPath="$PROJECT_DIR$/GoFileSharp/Controllers/GoFileController.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/GoFileSharp/GoFile.cs" beforeDir="false" afterPath="$PROJECT_DIR$/GoFileSharp/GoFile.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/GoFileSharp/Model/GoFileData/FileData.cs" beforeDir="false" afterPath="$PROJECT_DIR$/GoFileSharp/Model/GoFileData/FileData.cs" afterDir="false" />
-    </list>
+    <list default="true" id="0c26aabe-eb45-48dc-b2c9-3b95d3e539ba" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -49,30 +44,30 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    ".NET Project.Sandbox.executor": "Run",
-    "ASKED_ADD_EXTERNAL_FILES": "true",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "imp/tests",
-    "ignore.virus.scanning.warn.message": "true",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;.NET Project.Sandbox.executor&quot;: &quot;Run&quot;,
+    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;imp/tests&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
-  "keyToStringList": {
-    "rider.external.source.directories": [
-      "C:\\Users\\JohnO\\AppData\\Roaming\\JetBrains\\Rider2023.3\\resharper-host\\DecompilerCache",
-      "C:\\Users\\JohnO\\AppData\\Roaming\\JetBrains\\Rider2023.3\\resharper-host\\SourcesCache",
-      "C:\\Users\\JohnO\\AppData\\Local\\Symbols\\src"
+  &quot;keyToStringList&quot;: {
+    &quot;rider.external.source.directories&quot;: [
+      &quot;C:\\Users\\JohnO\\AppData\\Roaming\\JetBrains\\Rider2023.3\\resharper-host\\DecompilerCache&quot;,
+      &quot;C:\\Users\\JohnO\\AppData\\Roaming\\JetBrains\\Rider2023.3\\resharper-host\\SourcesCache&quot;,
+      &quot;C:\\Users\\JohnO\\AppData\\Local\\Symbols\\src&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration name="Sandbox" type="DotNetProject" factoryName=".NET Project">
       <option name="EXE_PATH" value="" />
@@ -103,7 +98,7 @@
       <updated>1708006584396</updated>
       <workItem from="1708006585499" duration="425000" />
       <workItem from="1708017099264" duration="636000" />
-      <workItem from="1708970790286" duration="10087000" />
+      <workItem from="1708970790286" duration="10602000" />
     </task>
     <servers />
   </component>
