@@ -353,3 +353,4 @@ MigrationBackup/
 .idea/
 *.sln.iml
 GoFileSharp/.idea
+GoFileSharp/Tests/tests_config.json
