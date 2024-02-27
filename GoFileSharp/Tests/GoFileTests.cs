@@ -1,22 +1,32 @@
+using System.Diagnostics;
+using GoFileSharp;
+
 namespace Tests;
 
 [TestClass]
 public class GoFileTests
 {
+    private static Config _config;
+    
     [AssemblyInitialize]
-    public void Setup(TestContext ctx)
+    public static void Setup(TestContext ctx)
     {
-        //todo: load config data
+        Debug.WriteLine("=== Assembly Setup ===");
+        _config = Config.Load();
+
+        GoFile.ApiToken = _config.ApiToken;
     }
 
-    [AssemblyCleanup]
-    public void TearDown(TestContext ctx)
-    {
-        //todo: ya mum
-    }
-    
     [TestMethod]
-    public void GetRootFolder(){}
+    public async Task GetRootFolder()
+    {
+        var root = await GoFile.GetMyRootFolderAsync();
+        
+        Assert.IsNotNull(root);
+        Assert.IsNotNull(root.Name == "root");
+        Assert.IsTrue(root.IsRoot);
+        Assert.IsTrue(root.ParentFolderId == null);
+    }
     
     [TestMethod]
     public void CreateFolder() {}

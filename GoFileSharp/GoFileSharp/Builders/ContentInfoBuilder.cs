@@ -54,6 +54,7 @@ namespace GoFileSharp.Builders
             content.Code = _info.Code;
             content.CreateTime = _info.CreateTime;
             content.IsPublic = _info.IsPublic;
+            content.IsRoot = _info.IsRoot;
             content.Childs = _info.Childs;
 
             foreach (object o in _info.Contents.Values)

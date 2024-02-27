@@ -23,6 +23,7 @@ namespace GoFileSharp.Model.GoFileData
 
         [JsonProperty("public")]
         public bool IsPublic { get; set; }
+        public bool IsRoot { get; set; }
 
         public Dictionary<string, object> Contents { get; set; }
     }
