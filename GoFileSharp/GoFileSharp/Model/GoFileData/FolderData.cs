@@ -13,6 +13,12 @@ namespace GoFileSharp.Model.GoFileData
 
         [JsonProperty("parentFolder")]
         public string ParentFolderId { get; set; }
+        
+        /// <summary>
+        /// This property has no meaning at this time, but it exists on the API
+        /// </summary>
+        /// <remarks>You probably want to use <see cref="DirectLink"/> instead</remarks>
+        public string[] DirectLinks { get; set; }
 
         public long CreateTime { get; set; }
 
@@ -22,7 +28,7 @@ namespace GoFileSharp.Model.GoFileData
 
         [JsonProperty("public")]
         public bool IsPublic { get; set; }
-
+        
         public bool IsRoot { get; set; } = false;
     }
 }
