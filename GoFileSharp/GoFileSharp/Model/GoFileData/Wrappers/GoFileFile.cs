@@ -23,7 +23,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         {
             var status = await _api.SetOption(GoFile.ApiToken, Id, option);
 
-            if (status) await Refresh();
+            if (status) await RefreshAsync();
 
             return status;
         }
@@ -32,9 +32,9 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// Refresh this files information
         /// </summary>
         /// <returns></returns>
-        public async Task<bool> Refresh()
+        public async Task<bool> RefreshAsync()
         {
-            var parent = await GoFile.GetFolder(ParentFolderId, true);
+            var parent = await GoFile.GetFolderAsync(ParentFolderId, true);
 
             if (parent == null) return false;
 
