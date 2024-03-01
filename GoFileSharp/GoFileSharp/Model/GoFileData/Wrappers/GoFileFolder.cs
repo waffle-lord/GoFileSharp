@@ -25,7 +25,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         {
             var status = await _api.SetOption(GoFile.ApiToken, Id, option);
 
-            if (status) await Refresh();
+            if (status) await RefreshAsync();
 
             return status;
         }
@@ -34,13 +34,13 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// Refresh this folders information
         /// </summary>
         /// <returns></returns>
-        public async Task<bool> Refresh()
+        public async Task<bool> RefreshAsync()
         {
-            var thisFolder = await GoFile.GetFolder(Id, true);
+            var thisFolder = await GoFile.GetFolderAsync(Id, true);
 
             if(thisFolder == null) return false;
 
-            base.Refresh(thisFolder);
+            base.Update(thisFolder);
 
             return true;
         }
@@ -59,7 +59,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
                 return null;
             }
 
-            var contentInfo = await GoFile.GetFolder(createFolderResponse.Data.Id);
+            var contentInfo = await GoFile.GetFolderAsync(createFolderResponse.Data.Id);
 
             if(contentInfo == null)
             {
@@ -97,7 +97,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
 
             if(folderContent is FolderData folderData)
             {
-                var folder = await GoFile.GetFolder(folderData.Id);
+                var folder = await GoFile.GetFolderAsync(folderData.Id, true);
 
                 if(folder != null)
                 {

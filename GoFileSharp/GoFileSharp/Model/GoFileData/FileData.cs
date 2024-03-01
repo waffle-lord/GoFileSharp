@@ -37,7 +37,7 @@ namespace GoFileSharp.Model.GoFileData
 
         public string Link { get; set; }
 
-        public void Update(FileData file)
+        protected void Update(FileData file)
         {
             Id = file.Id;
             Md5 = file.Md5;

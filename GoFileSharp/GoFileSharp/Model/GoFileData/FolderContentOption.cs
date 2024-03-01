@@ -21,7 +21,8 @@ namespace GoFileSharp.Model.GoFileData
 
         public static FolderContentOption Description(string description) => new FolderContentOption("description", description);
 
-        public static FolderContentOption Expire(DateTimeOffset expireDate) => new FolderContentOption("expire", expireDate.ToUnixTimeMilliseconds().ToString());
+        public static FolderContentOption Expire(DateTimeOffset expireDate) =>
+            new FolderContentOption("expire", expireDate.ToUnixTimeSeconds().ToString());
 
         public static FolderContentOption Tags(List<string> tags) => new FolderContentOption("tags", string.Join(',', tags));
     }

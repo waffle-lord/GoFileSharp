@@ -25,7 +25,7 @@ namespace GoFileSharp.Model.GoFileData
 
         public List<IContent> Contents { get; set; } = new List<IContent>();
 
-        public void Refresh(ContentInfo content)
+        protected void Update(ContentInfo content)
         {
             Id = content.Id;
             Type = content.Type;
@@ -45,7 +45,7 @@ namespace GoFileSharp.Model.GoFileData
 
         public ContentInfo(ContentInfo content)
         {
-            Refresh(content);
+            Update(content);
         }
     }
 }
