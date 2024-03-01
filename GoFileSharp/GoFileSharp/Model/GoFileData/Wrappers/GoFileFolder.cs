@@ -97,7 +97,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
 
             if(folderContent is FolderData folderData)
             {
-                var folder = await GoFile.GetFolderAsync(folderData.Id);
+                var folder = await GoFile.GetFolderAsync(folderData.Id, true);
 
                 if(folder != null)
                 {

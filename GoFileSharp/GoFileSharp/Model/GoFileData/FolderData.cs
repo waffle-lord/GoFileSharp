@@ -1,4 +1,5 @@
-﻿using GoFileSharp.Interfaces;
+﻿using System;
+using GoFileSharp.Interfaces;
 using Newtonsoft.Json;
 
 namespace GoFileSharp.Model.GoFileData
@@ -21,6 +22,14 @@ namespace GoFileSharp.Model.GoFileData
         public string[] DirectLinks { get; set; }
 
         public long CreateTime { get; set; }
+        
+        public string Description { get; set; }
+        
+        public bool Password { get; set; }
+        
+        public long Expire { get; set; }
+        
+        public string Tags { get; set; }
 
         public string[] Childs { get; set; }
 
