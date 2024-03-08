@@ -75,11 +75,11 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// Delete this file
         /// </summary>
         /// <returns>Returns true if the file was deleted, otherwise false</returns>
-        public async Task<bool> DeleteAsync()
+        public async Task<DeleteInfo> DeleteAsync()
         {
             var result = await _api.DeleteContent(GoFile.ApiToken, new[] { this.Id });
 
-            return result.IsOK;
+            return result.Data ?? DeleteInfo.NoData();
         }
 
         /// <summary>

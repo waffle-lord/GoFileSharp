@@ -37,21 +37,11 @@ namespace GoFileSharp
         /// <returns>Returns content of the id</returns>
         private static async Task<IContent?> GetContentAsync(string contentId, bool noCache = false)
         {
-            if (ApiToken == null) return null;
-
             var response = await _api.GetContentAsync(contentId, ApiToken, noCache);
 
-            if(response.IsOK && response.Data != null)
+            if(response is { IsOK: true, Data: { } folder })
             {
-                if(response.Data is ContentInfo folder)
-                {
-                    return new GoFileFolder(folder, _api);
-                }
-
-                if(response.Data is FileData file)
-                {
-                    return new GoFileFile(file, _api);
-                }
+                return new GoFileFolder(folder, _api);
             }
 
             return null;
@@ -107,7 +97,7 @@ namespace GoFileSharp
 
                 if (parentFolder == null) return null;
 
-                uploadedContent = parentFolder.Contents.SingleOrDefault(x => x.Id == uploadInfo.FileId);
+                uploadedContent = parentFolder.Children.SingleOrDefault(x => x.Id == uploadInfo.FileId);
 
                 if (uploadedContent != null) break;
 

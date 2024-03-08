@@ -203,7 +203,7 @@ public class GoFileTests
         
         Assert.IsTrue(copied);
         Assert.IsNotNull(copiedFile);
-        Assert.IsTrue(copyTargetFolder.Contents.Count > 0);
+        Assert.IsTrue(copyTargetFolder.Children.Count > 0);
         Assert.IsTrue(_testFile.Length == copiedFile.Size);
     }
     
@@ -224,19 +224,19 @@ public class GoFileTests
         await targetFolder.RefreshAsync();
         
         Assert.IsTrue(copied);
-        Assert.IsNotNull(sourceFolder.Contents);
-        Assert.IsNotNull(targetFolder.Contents);
-        Assert.IsTrue(sourceFolder.Contents.Count > 0);
-        Assert.IsTrue(targetFolder.Contents.Count > 0);
+        Assert.IsNotNull(sourceFolder.Children);
+        Assert.IsNotNull(targetFolder.Children);
+        Assert.IsTrue(sourceFolder.Children.Count > 0);
+        Assert.IsTrue(targetFolder.Children.Count > 0);
     
-        var targetTestFolder = await targetFolder.FindFolderAsync(targetFolder.Contents[0].Name);
+        var targetTestFolder = await targetFolder.FindFolderAsync(targetFolder.Children[0].Name);
         
         Assert.IsNotNull(targetTestFolder);
-        Assert.IsTrue(targetTestFolder.Contents.Count > 0);
+        Assert.IsTrue(targetTestFolder.Children.Count > 0);
         
-        var targetTestFileName = targetTestFolder.Contents[0].Name;
+        var targetTestFileName = targetTestFolder.Children[0].Name;
         
-        Assert.IsTrue(sourceFolder.Contents[0].Name == targetTestFileName);
+        Assert.IsTrue(sourceFolder.Children[0].Name == targetTestFileName);
     }
     
     [TestMethod]
@@ -251,22 +251,22 @@ public class GoFileTests
         await targetFolder.UploadIntoAsync(_testFile);
         await targetFolder.RefreshAsync();
     
-        var copied = await sourceFolder.CopyIntoAsync(targetFolder.Contents.ToArray());
+        var copied = await sourceFolder.CopyIntoAsync(targetFolder.Children.ToArray());
         
         Assert.IsTrue(copied);
-        Assert.IsNotNull(sourceFolder.Contents);
-        Assert.IsNotNull(targetFolder.Contents);
-        Assert.IsTrue(sourceFolder.Contents.Count > 0);
-        Assert.IsTrue(targetFolder.Contents.Count > 0);
+        Assert.IsNotNull(sourceFolder.Children);
+        Assert.IsNotNull(targetFolder.Children);
+        Assert.IsTrue(sourceFolder.Children.Count > 0);
+        Assert.IsTrue(targetFolder.Children.Count > 0);
         
-        var targetTestFolder = await targetFolder.FindFolderAsync(targetFolder.Contents[0].Name);
+        var targetTestFolder = await targetFolder.FindFolderAsync(targetFolder.Children[0].Name);
 
         Assert.IsNotNull(targetTestFolder);
-        Assert.IsTrue(targetTestFolder.Contents.Count > 0);
+        Assert.IsTrue(targetTestFolder.Children.Count > 0);
         
-        var targetTestFileName = targetTestFolder.Contents[0].Name;
+        var targetTestFileName = targetTestFolder.Children[0].Name;
         
-        Assert.IsTrue(sourceFolder.Contents[0].Name == targetTestFileName);
+        Assert.IsTrue(sourceFolder.Children[0].Name == targetTestFileName);
     }
 
     [TestMethod]
@@ -278,11 +278,7 @@ public class GoFileTests
         var fileOptionsFolder = await testFolder.CreateFolderAsync("fileOptions");
         var testFile = await fileOptionsFolder.UploadIntoAsync(_testFile);
 
-        var directLinkSet = await testFile.SetDirectLink(true);
-
-        await testFile.RefreshAsync();
-        
-        Assert.IsTrue(directLinkSet);
+        Assert.IsTrue(await testFile.SetDirectLink(true));
         Assert.IsNotNull(testFile.DirectLink);
     }
 
@@ -292,7 +288,7 @@ public class GoFileTests
         var desc = "This is a description";
         var tags = new List<string>() { "testing", "stuff" };
         var pass = "test123";
-        var expiry = DateTime.Now.AddDays(5);
+        DateTimeOffset expiry = DateTime.Now.AddDays(5);
         
         await DelayTwoSeconds();
 
@@ -304,6 +300,15 @@ public class GoFileTests
         Assert.IsTrue(await folderOptionsFolder.SetPublic(true));
         Assert.IsTrue(await folderOptionsFolder.SetExpire(expiry));
         Assert.IsTrue(await folderOptionsFolder.SetPassword(pass));
+        
+        Assert.IsNotNull(folderOptionsFolder.Description);
+        Assert.IsNotNull(folderOptionsFolder.Expire);
+        Assert.IsNotNull(folderOptionsFolder.Tags);
+        Assert.IsTrue(folderOptionsFolder.IsPublic);
+        Assert.IsTrue(folderOptionsFolder.HasPassword);
+        Assert.IsTrue(folderOptionsFolder.Tags == string.Join(",", tags));
+        Assert.IsTrue(folderOptionsFolder.Description == desc);
+        Assert.IsTrue(folderOptionsFolder.Expire == expiry.ToUnixTimeSeconds());
     }
     
     [TestMethod]
@@ -313,8 +318,10 @@ public class GoFileTests
 
         var testFolder = await GoFile.GetFolderAsync(_config.TestFolderId);
         var delFolder = await testFolder.CreateFolderAsync("delFolder");
+        await delFolder.UploadIntoAsync(_testFile);
 
-        Assert.IsTrue(await delFolder.DeleteAsync());
+        var delInfo = await delFolder.DeleteAsync();
+        Assert.IsTrue(delInfo.IsOk);
         Assert.IsNull(await GoFile.GetFolderAsync(delFolder.Id, true));
     }
 
@@ -326,9 +333,11 @@ public class GoFileTests
         var testFolder = await GoFile.GetFolderAsync(_config.TestFolderId);
         var delFileFolder = await testFolder.CreateFolderAsync("delFile");
         var delFile = await delFileFolder.UploadIntoAsync(_testFile);
+
+        var delInfo = await delFile.DeleteAsync();
         
-        Assert.IsTrue(await delFile.DeleteAsync());
+        Assert.IsTrue(delInfo.IsOk);
         await delFileFolder.RefreshAsync();
-        Assert.IsTrue(delFileFolder.Contents.Count == 0);
+        Assert.IsTrue(delFileFolder.Children.Count == 0);
     }
 }
