@@ -1,6 +1,7 @@
-﻿using GoFileSharp.Interfaces;
-using GoFileSharp.Model.GoFileData.Wrappers;
+﻿using System;
+using GoFileSharp.Interfaces;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace GoFileSharp.Model.GoFileData
 {
@@ -61,6 +62,21 @@ namespace GoFileSharp.Model.GoFileData
         public FileData(FileData file)
         {
             Update(file);
+        }
+
+        public static bool TryParse(JObject jObject, out FileData fileData)
+        {
+            try
+            {
+                fileData = jObject.ToObject<FileData>();
+
+                return fileData != null && fileData.Type == "file";
+            }
+            catch (Exception)
+            {
+                fileData = null;
+                return false;
+            }
         }
     }
 }

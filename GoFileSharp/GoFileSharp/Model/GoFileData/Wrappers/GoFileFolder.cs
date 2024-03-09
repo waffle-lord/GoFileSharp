@@ -12,11 +12,11 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
     /// <summary>
     /// A wrapper class for the GoFile <see cref="ContentInfo"/>
     /// </summary>
-    public class GoFileFolder : ContentInfo
+    public class GoFileFolder : FolderData
     {
         private GoFileController _api;
 
-        public GoFileFolder(ContentInfo content, GoFileController controller) : base(content)
+        public GoFileFolder(FolderData content, GoFileController controller) : base(content)
         {
             _api = controller;
         }
@@ -54,19 +54,12 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         {
             var createFolderResponse = await _api.CreateFolder(GoFile.ApiToken, Id, folderName);
 
-            if(!createFolderResponse.IsOK || createFolderResponse.Data == null || createFolderResponse.Data.Id == null)
+            if(!createFolderResponse.IsOK || createFolderResponse.Data == null)
             {
                 return null;
             }
 
-            var contentInfo = await GoFile.GetFolderAsync(createFolderResponse.Data.Id);
-
-            if(contentInfo == null)
-            {
-                return null;
-            }
-
-            return new GoFileFolder(contentInfo, _api);
+            return new GoFileFolder(createFolderResponse.Data, _api);
         }
 
         /// <summary>
@@ -76,7 +69,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// <returns>Returns the file as a <see cref="GoFileFile"/> object or null</returns>
         public GoFileFile? FindFile(string Name)
         {
-            var fileContent = Contents.SingleOrDefault(x => x.Name == Name);
+            var fileContent = Children.SingleOrDefault(x => x.Name == Name);
 
             if(fileContent is FileData file)
             {
@@ -93,7 +86,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// <returns>Returns the folder as a <see cref="GoFileFolder"/> object or null</returns>
         public async Task<GoFileFolder?> FindFolderAsync(string Name)
         {
-            var folderContent = Contents.SingleOrDefault(x => x.Name == Name);
+            var folderContent = Children.SingleOrDefault(x => x.Name == Name);
 
             if(folderContent is FolderData folderData)
             {
@@ -124,11 +117,11 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// </summary>
         /// <returns>Returns true if the folder was deleted, otherwise false</returns>
         /// <exception cref="NotImplementedException"></exception>
-        public async Task<bool> DeleteAsync()
+        public async Task<DeleteInfo> DeleteAsync()
         {
             var response = await _api.DeleteContent(GoFile.ApiToken, new[] { Id });
 
-            return response.IsOK;
+            return response.Data ?? DeleteInfo.NoData();
         }
 
         /// <summary>
