@@ -1,3 +1,5 @@
+[![Run Tests](https://github.com/waffle-lord/GoFileSharp/actions/workflows/dotnet.yml/badge.svg)](https://github.com/waffle-lord/GoFileSharp/actions/workflows/dotnet.yml)
+
 # GoFileSharp
 
 A .NET library for the GoFile.io API written in C#
