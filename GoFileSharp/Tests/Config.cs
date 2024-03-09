@@ -9,11 +9,10 @@ public class Config
     public static Config Load()
     {
         var apiToken =Environment.GetEnvironmentVariable("GOFILE_API_TOKEN");
-        var testFolderId = Environment.GetEnvironmentVariable("GOFILE_TEST_FOLDER_ID");
 
         // use environment vars during github actions if they are present
-        if (!string.IsNullOrWhiteSpace(apiToken) && !string.IsNullOrWhiteSpace(testFolderId))
-            return new Config() { ApiToken = apiToken, TestFolderId = testFolderId };
+        if (!string.IsNullOrWhiteSpace(apiToken))
+            return new Config() { ApiToken = apiToken };
         
         
         // load config from file for local test runs
@@ -44,11 +43,4 @@ public class Config
     /// </summary>
     [JsonProperty("api-token")]
     public string ApiToken { get; set; } = "your_api_token_here";
-
-    /// <summary>
-    /// The Content Id of the folder on GoFile to use during testing
-    /// </summary>
-    /// <remarks>Contents of this folder are volatile</remarks>
-    [JsonProperty("test-folder-id")]
-    public string TestFolderId { get; set; } = "123-456-7890";
 }
