@@ -8,6 +8,15 @@ public class Config
     private static string _configPath = Path.GetFullPath("../../../tests_config.json");
     public static Config Load()
     {
+        var apiToken =Environment.GetEnvironmentVariable("GOFILE_API_TOKEN");
+        var testFolderId = Environment.GetEnvironmentVariable("GOFILE_TEST_FOLDER_ID");
+
+        // use environment vars during github actions if they are present
+        if (!string.IsNullOrWhiteSpace(apiToken) && !string.IsNullOrWhiteSpace(testFolderId))
+            return new Config() { ApiToken = apiToken, TestFolderId = testFolderId };
+        
+        
+        // load config from file for local test runs
         try
         {
             Debug.WriteLine($"Loading Config: {_configPath}");
