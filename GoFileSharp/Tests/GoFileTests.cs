@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using GoFileSharp;
+using GoFileSharp.Interfaces;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -248,10 +249,13 @@ public class GoFileTests
         var sourceFolder = await testFolder.CreateFolderAsync("copyIntoSource");
         var targetFolder = await testFolder.CreateFolderAsync("copyIntoTarget");
     
-        await targetFolder.UploadIntoAsync(_testFile);
-        await targetFolder.RefreshAsync();
+        await sourceFolder.UploadIntoAsync(_testFile);
+        await sourceFolder.RefreshAsync();
     
-        var copied = await sourceFolder.CopyIntoAsync(targetFolder.Children.ToArray());
+        var copied = await targetFolder.CopyIntoAsync([sourceFolder]);
+
+        await sourceFolder.RefreshAsync();
+        await targetFolder.RefreshAsync();
         
         Assert.IsTrue(copied);
         Assert.IsNotNull(sourceFolder.Children);
@@ -259,7 +263,7 @@ public class GoFileTests
         Assert.IsTrue(sourceFolder.Children.Count > 0);
         Assert.IsTrue(targetFolder.Children.Count > 0);
         
-        var targetTestFolder = await targetFolder.FindFolderAsync(targetFolder.Children[0].Name);
+        var targetTestFolder = await targetFolder.FindFolderAsync(sourceFolder.Name);
 
         Assert.IsNotNull(targetTestFolder);
         Assert.IsTrue(targetTestFolder.Children.Count > 0);
