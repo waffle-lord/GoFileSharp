@@ -30,5 +30,4 @@ jobs:
     - name: Test
       env:
         GOFILE_API_TOKEN: ${{ secrets.GOFILE_API_TOKEN }}
-        GOFILE_TEST_FOLDER_ID: ${{ secrets.GOFILE_TEST_FOLDER_ID }}
       run: dotnet test --no-build --verbosity normal
