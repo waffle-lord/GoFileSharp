@@ -61,9 +61,9 @@ namespace GoFileSharp.Controllers
         /// Get a server from GoFile
         /// </summary>
         /// <returns>Returns the response from GoFile with the server info or null</returns>
-        public async Task<GoFileResponse<ServerInfo>> GetServerAsync()
+        public async Task<GoFileResponse<ServerInfo>> GetServersAsync(string zoneId = "")
         {
-            var serverRequest = new HttpRequestMessage(HttpMethod.Get, Routes.GetServer());
+            var serverRequest = new HttpRequestMessage(HttpMethod.Get, Routes.GetServers(zoneId));
 
             var serverResponse = await _client.SendAsync(serverRequest);
 
@@ -163,7 +163,7 @@ namespace GoFileSharp.Controllers
                 new GoFileResponse<UploadInfo>() { Status = $"File does not exist: {file.FullName}" };
             }
 
-            var serverResponse = await GetServerAsync();
+            var serverResponse = await GetServersAsync();
 
             if (!serverResponse.IsOK || serverResponse.Data == null)
             {
@@ -187,7 +187,7 @@ namespace GoFileSharp.Controllers
                     if ((folderId != null))
                         form.Add(new StringContent(folderId), "folderId");
 
-                    var uploadRequest = new HttpRequestMessage(HttpMethod.Post, Routes.UploadFile(serverResponse.Data.Server))
+                    var uploadRequest = new HttpRequestMessage(HttpMethod.Post, Routes.UploadFile(serverResponse.Data.Servers[0].Name))
                     {
                         Content = form
                     };

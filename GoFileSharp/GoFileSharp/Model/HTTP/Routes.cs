@@ -4,9 +4,11 @@
     {
         private static string _baseUrl = "https://api.gofile.io";
 
-        internal static string GetServer()
+        internal static string GetServers(string zoneId)
         {
-            return $"{_baseUrl}/getServer";
+            return string.IsNullOrWhiteSpace(zoneId) 
+                ? $"{_baseUrl}/servers" 
+                : $"{_baseUrl}/servers?zone={zoneId}";
         }
 
         internal static string GetContent(string contentId, string token, bool noCache)

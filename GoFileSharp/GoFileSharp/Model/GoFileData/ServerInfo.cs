@@ -1,7 +1,9 @@
-﻿namespace GoFileSharp.Model.GoFileData
+﻿using System.Collections.Generic;
+
+namespace GoFileSharp.Model.GoFileData
 {
     public class ServerInfo
     {
-        public string Server { get; set; }
+        public List<Server> Servers { get; set; }
     }
 }
