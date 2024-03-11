@@ -9,11 +9,21 @@ using System.Threading.Tasks;
 
 
 /* TODO:
- * [X] GetContent
- * [X] UploadFile
- * [X] GetMyFolder (gets the user's root folder, maybe a better name for this idk ...)
- * [ ] ...
- * [ ] probably should offer some kind of logging... but I'm kind of lazy so idk ...
+ * [X] GET /servers
+ * [ ] GET /accounts/{accountId}
+ * [ ] GET /contents/{contentId}
+ * [ ] POST /contents/uploadFile
+ * [ ] POST /contents/createFolder
+ * [ ] POST /contents/copy
+ * [ ] POST /contents/{contentId}/copy
+ * [ ] POST /contents/{contentId}/directLinks
+ * [ ] PUT /contents/move
+ * [ ] PUT /contents/{contentId}/move
+ * [ ] PUT /contents/{contentId}/update
+ * [ ] PUT /contents/{contentId}/{directLinkId}
+ * [ ] DELETE /contents
+ * [ ] DELETE /contents/{contentId}
+ * [ ] DELETE /contents/{contentId}/directLinks/{directLinkId}
  */
 
 namespace GoFileSharp
@@ -63,24 +73,23 @@ namespace GoFileSharp
 
             return null;
         }
-
-        // todo: getting files via content ID on the API is not allowed?
-        // /// <summary>
-        // /// Get a file object from an ID
-        // /// </summary>
-        // /// <param name="contentId"></param>
-        // /// <returns></returns>
-        // public static async Task<GoFileFile?> GetFile(string contentId, bool noCache = false)
-        // {
-        //     var file = await GetContent(contentId, noCache);
-        //
-        //     if (file is GoFileFile gofileFile)
-        //     {
-        //         return gofileFile;
-        //     }
-        //
-        //     return null;
-        // }
+        
+        /// <summary>
+        /// Get a file object from an ID
+        /// </summary>
+        /// <param name="contentId"></param>
+        /// <returns></returns>
+        public static async Task<GoFileFile?> GetFile(string contentId, bool noCache = false)
+        {
+            var file = await GetContentAsync(contentId, noCache);
+        
+            if (file is GoFileFile gofileFile)
+            {
+                return gofileFile;
+            }
+        
+            return null;
+        }
 
         private static async Task<GoFileFile?> TryGetUplaodedFile(UploadInfo uploadInfo)
         {
