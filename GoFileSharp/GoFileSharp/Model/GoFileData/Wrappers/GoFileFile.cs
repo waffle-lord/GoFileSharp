@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using GoFileSharp.Controllers;
 using GoFileSharp.Interfaces;
@@ -56,7 +57,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// <returns>Returns true if the file was downloaded, otherwise false</returns>
         public async Task<bool> DownloadAsync(FileInfo destinationFile, bool overwrite = false, IProgress<double> progress = null)
         {
-            var result = await _api.DownloadFileAsync(DirectLink, destinationFile, overwrite, progress);
+            var result = await _api.DownloadFileAsync(DirectLinks.Values.First().Link, destinationFile, overwrite, progress);
 
             return result.IsOK;
         }

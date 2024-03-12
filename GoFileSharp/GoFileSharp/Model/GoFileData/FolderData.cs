@@ -8,43 +8,62 @@ namespace GoFileSharp.Model.GoFileData
 {
     public class FolderData : IContent
     {
-        public string Id { get; set; }
+        private string _id;
+        
+        public bool IsOwner { get; set; }
+
+        public string Id
+        {
+            get => _id ?? FolderId;
+            set => _id = value;
+        }
+        
+        // api returns folderId when creating a folder instead of id
+        [JsonProperty]
+        private string FolderId { get; set; }
 
         public string Type { get; set; }
 
         public string Name { get; set; }
-
-        [JsonProperty("parentFolder")] public string ParentFolderId { get; set; }
-
-        /// <summary>
-        /// This property has no meaning at this time, but it exists on the API
-        /// </summary>
-        /// <remarks>You probably want to use <see cref="DirectLink"/> instead</remarks>
-        public string[] DirectLinks { get; set; }
-
+        
+        public string Code { get; set; }
+        
+        [JsonProperty("parentFolder")]
+        public string ParentFolderId { get; set; }
+        
         public long CreateTime { get; set; }
+        
+        public bool IsRoot { get; set; } = false;
+        
+        [JsonProperty("public")] 
+        public bool IsPublic { get; set; }
+        
+        public ulong TotalDownloadCount { get; set; }
+        
+        public ulong TotalSize { get; set; }
+        
+        public Dictionary<string, DirectLink> DirectLinks { get; set; }
 
         public string Description { get; set; }
 
-        [JsonProperty("password")] public bool HasPassword { get; set; }
+        [JsonProperty("password")] 
+        public bool HasPassword { get; set; }
 
         public long Expire { get; set; }
 
         public string Tags { get; set; }
-
-        [JsonProperty("childs")] public string[] ChildIds { get; set; }
-
-        public string Code { get; set; }
-
-        [JsonProperty] private Dictionary<string, object> Contents { get; set; } = new Dictionary<string, object>();
+        
+        public string[] ChildrenIds { get; set; }
+        
+        [JsonProperty("children")] 
+        private Dictionary<string, object> ChildrenDictionary { get; set; } = new Dictionary<string, object>();
+        
+        [JsonIgnore]
         public List<IContent> Children { get; set; } = new List<IContent>();
-
-        [JsonProperty("public")] public bool IsPublic { get; set; }
-
-        public bool IsRoot { get; set; } = false;
-
+        
         protected void Update(FolderData folder)
         {
+            IsOwner = folder.IsOwner;
             Id = folder.Id;
             Type = folder.Type;
             Name = folder.Name;
@@ -55,11 +74,13 @@ namespace GoFileSharp.Model.GoFileData
             HasPassword = folder.HasPassword;
             Expire = folder.Expire;
             Tags = folder.Tags;
-            ChildIds = folder.ChildIds;
+            ChildrenIds = folder.ChildrenIds;
             Children = folder.Children;
             Code = folder.Code;
             IsPublic = folder.IsPublic;
             IsRoot = folder.IsRoot;
+            TotalDownloadCount = folder.TotalDownloadCount;
+            TotalSize = folder.TotalSize;
         }
 
         public FolderData()
@@ -91,7 +112,7 @@ namespace GoFileSharp.Model.GoFileData
                 if (folderData == null || folderData.Type != "folder")
                     return false;
 
-                foreach (object o in folderData.Contents.Values)
+                foreach (object o in folderData.ChildrenDictionary.Values)
                 {
                     var child = GetContentData(JObject.Parse(o.ToString() ?? ""));
 

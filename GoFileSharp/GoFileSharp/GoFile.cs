@@ -7,24 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-
-/* TODO:
- * [X] GET /servers
- * [ ] GET /accounts/{accountId}
- * [ ] GET /contents/{contentId}
- * [ ] POST /contents/uploadFile
- * [ ] POST /contents/createFolder
- * [ ] POST /contents/copy
- * [ ] POST /contents/{contentId}/copy
- * [ ] POST /contents/{contentId}/directLinks
- * [ ] PUT /contents/move
- * [ ] PUT /contents/{contentId}/move
- * [ ] PUT /contents/{contentId}/update
- * [ ] PUT /contents/{contentId}/{directLinkId}
- * [ ] DELETE /contents
- * [ ] DELETE /contents/{contentId}
- * [ ] DELETE /contents/{contentId}/directLinks/{directLinkId}
- */
+// todo: add preferred zone for uploads
 
 namespace GoFileSharp
 {
@@ -49,9 +32,13 @@ namespace GoFileSharp
         {
             var response = await _api.GetContentAsync(contentId, ApiToken, noCache);
 
-            if(response is { IsOK: true, Data: { } folder })
+            if(response is { IsOK: true, Data: { } data })
             {
-                return new GoFileFolder(folder, _api);
+                if (data is FileData file)
+                    return new GoFileFile(file, _api);
+                
+                if (data is FolderData folder) 
+                    return new GoFileFolder(folder, _api);
             }
 
             return null;
@@ -74,22 +61,22 @@ namespace GoFileSharp
             return null;
         }
         
-        /// <summary>
-        /// Get a file object from an ID
-        /// </summary>
-        /// <param name="contentId"></param>
-        /// <returns></returns>
-        public static async Task<GoFileFile?> GetFile(string contentId, bool noCache = false)
-        {
-            var file = await GetContentAsync(contentId, noCache);
-        
-            if (file is GoFileFile gofileFile)
-            {
-                return gofileFile;
-            }
-        
-            return null;
-        }
+        // /// <summary>
+        // /// Get a file object from an ID
+        // /// </summary>
+        // /// <param name="contentId"></param>
+        // /// <returns></returns>
+        // public static async Task<GoFileFile?> GetFile(string contentId, bool noCache = false)
+        // {
+        //     var file = await GetContentAsync(contentId, noCache);
+        //
+        //     if (file is GoFileFile gofileFile)
+        //     {
+        //         return gofileFile;
+        //     }
+        //
+        //     return null;
+        // }
 
         private static async Task<GoFileFile?> TryGetUplaodedFile(UploadInfo uploadInfo)
         {

@@ -80,16 +80,18 @@ namespace GoFileSharp.Controllers
         /// </summary>
         /// <param name="contentId">The contentId of the folder to request content info for</param>
         /// <param name="token">The token to use with this request</param>
+        /// <param name="noCache">Whether or not to use GoFile's cache</param>
+        /// <param name="passwordHash">The SHA256 password hash to use if the content is password protected</param>
         /// <returns>Returns the response from GoFile with the content info or null</returns>
-        public async Task<GoFileResponse<FolderData>> GetContentAsync(string contentId, string token, bool noCache = false)
+        public async Task<GoFileResponse<IContent>> GetContentAsync(string contentId, string token, bool noCache = false, string passwordHash = "")
         {
-            var contentRequest = new HttpRequestMessage(HttpMethod.Get, Routes.GetContent(contentId, token, noCache));
+            var contentRequest = new HttpRequestMessage(HttpMethod.Get, Routes.GetContent(contentId, token, noCache, passwordHash));
 
             var contentResponse = await _client.SendAsync(contentRequest);
 
             if(contentResponse == null || contentResponse.Content == null)
             {
-                return GetFailedResponseStatus<FolderData>(contentResponse);
+                return GetFailedResponseStatus<IContent>(contentResponse);
             }
 
             var content = await contentResponse.Content.ReadAsStringAsync();
@@ -101,15 +103,20 @@ namespace GoFileSharp.Controllers
 
             if(status != "ok" || data == null || !data.HasValues)
             {
-                return new GoFileResponse<FolderData>() { Status = status};
+                return new GoFileResponse<IContent>() { Status = status};
+            }
+            
+            if (FileData.TryParse(data, out FileData file))
+            {
+                return new GoFileResponse<IContent>() { Status = status, Data = file };
             }
             
             if (FolderData.TryParse(data, out FolderData folder))
             {
-                return new GoFileResponse<FolderData>() { Status = status, Data = folder };
+                return new GoFileResponse<IContent>() { Status = status, Data = folder };
             }
 
-            return new GoFileResponse<FolderData>() { Status = "Failed to parse data" };
+            return new GoFileResponse<IContent>() { Status = "Failed to parse data" };
         }
 
         /// <summary>
@@ -187,7 +194,7 @@ namespace GoFileSharp.Controllers
                     if ((folderId != null))
                         form.Add(new StringContent(folderId), "folderId");
 
-                    var uploadRequest = new HttpRequestMessage(HttpMethod.Post, Routes.UploadFile(serverResponse.Data.Servers[0].Name))
+                    var uploadRequest = new HttpRequestMessage(HttpMethod.Post, Routes.PostUploadFile(serverResponse.Data.Servers[0].Name))
                     {
                         Content = form
                     };
@@ -224,7 +231,7 @@ namespace GoFileSharp.Controllers
         /// <returns></returns>
         public async Task<GoFileResponse<AccountDetails>> GetAccountDetails(string token)
         {
-            var accountRequest = new HttpRequestMessage(HttpMethod.Get, Routes.GetAccountDetails(token));
+            var accountRequest = new HttpRequestMessage(HttpMethod.Get, Routes.GetAccountId(token));
 
             var accountResponse = await _client.SendAsync(accountRequest);
 
@@ -245,7 +252,7 @@ namespace GoFileSharp.Controllers
         /// <returns></returns>
         public async Task<GoFileResponse<FolderData>> CreateFolder(string token, string parentFolderId, string folderName)
         {
-            var createFolderRequest = new HttpRequestMessage(HttpMethod.Put, Routes.CreateFolder());
+            var createFolderRequest = new HttpRequestMessage(HttpMethod.Post, Routes.PostCreateFolder());
 
             var requestDictionary = new Dictionary<string, string>
             {
@@ -275,7 +282,7 @@ namespace GoFileSharp.Controllers
         /// <returns></returns>
         public async Task<GoFileResponse<object>> CopyContent(string token, string[] contentIds, string destinationFolderId)
         {
-            var copyRequest = new HttpRequestMessage(HttpMethod.Put, Routes.CopyContent());
+            var copyRequest = new HttpRequestMessage(HttpMethod.Put, Routes.PostContentsCopy());
 
             var requestDictionary = new Dictionary<string, string>
             {
@@ -304,7 +311,7 @@ namespace GoFileSharp.Controllers
         /// <returns></returns>
         public async Task<GoFileResponse<DeleteInfo>> DeleteContent(string token, string[] contentIds)
         {
-            var deleteRequest = new HttpRequestMessage(HttpMethod.Delete, Routes.DeleteContent());
+            var deleteRequest = new HttpRequestMessage(HttpMethod.Delete, Routes.DeleteContents());
 
             var requestDictionary = new Dictionary<string, string>
             {
