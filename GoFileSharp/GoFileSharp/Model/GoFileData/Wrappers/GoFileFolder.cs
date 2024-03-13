@@ -23,11 +23,12 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
 
         private async Task<bool> SetOptionAndRefresh(IContentOption option)
         {
-            var status = await _api.SetOption(GoFile.ApiToken, Id, option);
+            var status = await _api.UpdateContent(GoFile.ApiToken, Id, option);
 
-            if (status) await RefreshAsync();
+            if (status.IsOK) 
+                await RefreshAsync();
 
-            return status;
+            return status.IsOK;
         }
 
         /// <summary>
@@ -38,7 +39,8 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         {
             var thisFolder = await GoFile.GetFolderAsync(Id, true);
 
-            if(thisFolder == null) return false;
+            if(thisFolder == null) 
+                return false;
 
             base.Update(thisFolder);
 
@@ -117,11 +119,11 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// </summary>
         /// <returns>Returns true if the folder was deleted, otherwise false</returns>
         /// <exception cref="NotImplementedException"></exception>
-        public async Task<DeleteInfo> DeleteAsync()
+        public async Task<Dictionary<string, DeleteInfo>> DeleteAsync()
         {
             var response = await _api.DeleteContent(GoFile.ApiToken, new[] { Id });
 
-            return response.Data ?? DeleteInfo.NoData();
+            return response.Data ?? new Dictionary<string, DeleteInfo>();
         }
 
         /// <summary>
@@ -182,5 +184,9 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// <param name="description"></param>
         /// <returns>Returns true is the option was set, otherwise false</returns>
         public async Task<bool> SetDescription(string description) => await SetOptionAndRefresh(FolderContentOption.Description(description));
+        
+        // todo: add direct link
+        // todo: update direct link
+        // todo: delete direct link
     }
 }

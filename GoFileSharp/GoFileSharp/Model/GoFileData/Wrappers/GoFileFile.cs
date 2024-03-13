@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -22,11 +23,12 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
 
         private async Task<bool> SetOptionAndRefresh(IContentOption option)
         {
-            var status = await _api.SetOption(GoFile.ApiToken, Id, option);
+            var status = await _api.UpdateContent(GoFile.ApiToken, Id, option);
 
-            if (status) await RefreshAsync();
+            if (status.IsOK) 
+                await RefreshAsync();
 
-            return status;
+            return status.IsOK;
         }
 
         /// <summary>
@@ -39,13 +41,15 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
 
             if (parent == null) return false;
 
-            var thisFile = parent.FindFile(Name);
+            var thisFile = parent.Children.First(x => x.Id == Id);
 
-            if(thisFile == null) return false;
-
-            base.Update(thisFile);
-
-            return true;
+            if (thisFile != null && thisFile is FileData fileData)
+            {
+                base.Update(fileData);
+                return true;
+            }
+            
+            return false;
         }
 
         /// <summary>
@@ -76,18 +80,46 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// Delete this file
         /// </summary>
         /// <returns>Returns true if the file was deleted, otherwise false</returns>
-        public async Task<DeleteInfo> DeleteAsync()
+        public async Task<Dictionary<string, DeleteInfo>> DeleteAsync()
         {
             var result = await _api.DeleteContent(GoFile.ApiToken, new[] { this.Id });
 
-            return result.Data ?? DeleteInfo.NoData();
+            return result.Data ?? new Dictionary<string, DeleteInfo>();
         }
 
+
         /// <summary>
-        /// Set this file's direct link option
+        /// Update the name of this file
         /// </summary>
-        /// <param name="value">True to enable direct link, false to disable</param>
-        /// <returns>Returns true is the option was updated successfully, otherwise false</returns>
-        public async Task<bool> SetDirectLink(bool value) => await SetOptionAndRefresh(FileContentOption.DirectLink(value));
+        /// <param name="newName">The new name of the file</param>
+        /// <returns>Returns true if the name was updated, otherwise false</returns>
+        public async Task<bool> SetName(string newName) =>
+            await SetOptionAndRefresh(FileContentOption.Name(newName));
+
+        /// <summary>
+        /// Add a direct link to this file
+        /// </summary>
+        /// <param name="optionsBuilder">The options builder to use for link options</param>
+        /// <returns></returns>
+        public async Task<DirectLink?> AddDirectLink(DirectLinkOptionsBuilder optionsBuilder)
+            => await AddDirectLink(optionsBuilder.Build());
+        
+        /// <summary>
+        /// Add a direct link to this file
+        /// </summary>
+        /// <param name="options">The options to set on the link</param>
+        /// <returns>A <see cref="DirectLink"/> or null if the link fails to be added</returns>
+        public async Task<DirectLink?> AddDirectLink(DirectLinkOptions? options = null)
+        {
+            var response = await _api.AddDirectLink(GoFile.ApiToken, Id, options);
+
+            if (response.IsOK) 
+                await RefreshAsync();
+
+            return response.Data;
+        }
+        
+        // todo: update direct link
+        // todo: delete direct link
     }
 }

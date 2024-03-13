@@ -34,8 +34,7 @@ namespace GoFileSharp
 
             if(response is { IsOK: true, Data: { } data })
             {
-                if (data is FileData file)
-                    return new GoFileFile(file, _api);
+                // todo: add file data here if it is ever added. Currently only folder are allowed
                 
                 if (data is FolderData folder) 
                     return new GoFileFolder(folder, _api);
@@ -91,11 +90,13 @@ namespace GoFileSharp
             {
                 var parentFolder = await GetFolderAsync(uploadInfo.ParentFolderId, true);
 
-                if (parentFolder == null) return null;
+                if (parentFolder == null) 
+                    return null;
 
                 uploadedContent = parentFolder.Children.SingleOrDefault(x => x.Id == uploadInfo.FileId);
 
-                if (uploadedContent != null) break;
+                if (uploadedContent != null) 
+                    break;
 
                 maxTries--;
 

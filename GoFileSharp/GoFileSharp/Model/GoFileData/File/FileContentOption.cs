@@ -14,6 +14,6 @@ namespace GoFileSharp.Model.GoFileData
             Value = value;
         }
 
-        public static FileContentOption DirectLink(bool value) => new FileContentOption("directLink", value.ToString().ToLower());
+        public static FileContentOption Name(string newName) => new FileContentOption("name", newName);
     }
 }

@@ -1,5 +1,7 @@
 using System.Diagnostics;
+using System.Text;
 using GoFileSharp;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Tests;
@@ -36,11 +38,30 @@ public class GoFileTests
         return $"GFS_TEST_{new string(nameTail)}";
     }
 
+    private static async Task<string> Setup_GetAccountId()
+    {
+        Debug.WriteLine($"-- [SETUP] Getting Account Id --");
+        
+        var response = await _client.GetAsync($"https://api.gofile.io/accounts/getid?token={_config.ApiToken}");
+        
+        response.EnsureSuccessStatusCode();
+        
+        var content = await response.Content.ReadAsStringAsync();
+        var data = JObject.Parse(content);
+        Assert.IsNotNull(content);
+        Assert.IsTrue(data["status"].Value<string>() == "ok");
+        var accountId = data["data"]["id"].Value<string>();
+        
+        Assert.IsTrue(!string.IsNullOrWhiteSpace(accountId));
+
+        return accountId;
+    }
     private static async Task<string> Setup_GetRootFolder()
     {
         Debug.WriteLine($"-- [SETUP] Getting Root Folder --");
-        
-        var response = await _client.GetAsync($"https://api.gofile.io/accounts/getId?token={_config.ApiToken}");
+
+        var accountId = await Setup_GetAccountId();
+        var response = await _client.GetAsync($"https://api.gofile.io/accounts/{accountId}?token={_config.ApiToken}");
         
         response.EnsureSuccessStatusCode();
         
@@ -67,17 +88,20 @@ public class GoFileTests
             { "parentFolderId", rootId },
             { "folderName", _testFolderName}
         };
+
+        var json = JsonConvert.SerializeObject(requestDictionary);
         
-        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.gofile.io/contents/createFolder")
+        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.gofile.io/contents/createfolder")
         {
-            Content = new FormUrlEncodedContent(requestDictionary)
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
         };
 
         var response = await _client.SendAsync(request);
         
+        var content = await response.Content.ReadAsStringAsync();
+        
         response.EnsureSuccessStatusCode();
 
-        var content = await response.Content.ReadAsStringAsync();
         var data = JObject.Parse(content);
         Assert.IsNotNull(content);
         Assert.IsTrue(data["status"].Value<string>() == "ok");
@@ -90,15 +114,17 @@ public class GoFileTests
     {
         Debug.WriteLine($"-- [SETUP] Removing Test Folder: {_testFolderName} --");
         
-        var requestDictionary = new Dictionary<string, string>
+        var requestParams = new Dictionary<string, string>
         {
             { "token", _config.ApiToken },
             { "contentsId", _testFolderId }
         };
-        
+
+        var json = JsonConvert.SerializeObject(requestParams);
+
         var request = new HttpRequestMessage(HttpMethod.Delete, "https://api.gofile.io/contents")
         {
-            Content = new FormUrlEncodedContent(requestDictionary)
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
         };
         
         var deleted = await _client.SendAsync(request);
@@ -315,12 +341,18 @@ public class GoFileTests
     {
         await DelayTwoSeconds();
 
+        var newName = "my new name.txt";
+
         var testFolder = await GoFile.GetFolderAsync(_testFolderId);
         var fileOptionsFolder = await testFolder.CreateFolderAsync("fileOptions");
         var testFile = await fileOptionsFolder.UploadIntoAsync(_testFile);
 
-        Assert.IsTrue(await testFile.SetDirectLink(true));
-        // Assert.IsNotNull(testFile.DirectLink);
+        var link = await testFile.AddDirectLink();
+        
+        Assert.IsTrue(await testFile.SetName(newName));
+        Assert.IsTrue(testFile.Name == newName);
+        Assert.IsNotNull(link);
+        Assert.IsTrue(testFile.DirectLinks.Count > 0);
     }
 
     [TestMethod]
@@ -362,7 +394,11 @@ public class GoFileTests
         await delFolder.UploadIntoAsync(_testFile);
 
         var delInfo = await delFolder.DeleteAsync();
-        Assert.IsTrue(delInfo.IsOk);
+        Assert.IsTrue(delInfo.Count > 0);
+        foreach (var info in delInfo.Values)
+        {
+            Assert.IsTrue(info.IsOk());
+        }
         Assert.IsNull(await GoFile.GetFolderAsync(delFolder.Id, true));
     }
 
@@ -377,7 +413,11 @@ public class GoFileTests
 
         var delInfo = await delFile.DeleteAsync();
         
-        Assert.IsTrue(delInfo.IsOk);
+        Assert.IsTrue(delInfo.Count > 0);
+        foreach (var info in delInfo.Values)
+        {
+            Assert.IsTrue(info.IsOk());
+        }
         await delFileFolder.RefreshAsync();
         Assert.IsTrue(delFileFolder.Children.Count == 0);
     }

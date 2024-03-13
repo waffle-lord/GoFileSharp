@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using GoFileSharp.Interfaces;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -92,9 +93,9 @@ namespace GoFileSharp.Model.GoFileData
             Update(folder);
         }
 
-        private static IContent? GetContentData(JObject jObject)
+        private static IContent? GetContentData(JObject jObject, string parentId)
         {
-            if (FileData.TryParse(jObject, out FileData file))
+            if (FileData.TryParse(jObject, parentId, out FileData file))
                 return file;
 
             if (FolderData.TryParse(jObject, out FolderData folder))
@@ -114,7 +115,7 @@ namespace GoFileSharp.Model.GoFileData
 
                 foreach (object o in folderData.ChildrenDictionary.Values)
                 {
-                    var child = GetContentData(JObject.Parse(o.ToString() ?? ""));
+                    var child = GetContentData(JObject.Parse(o.ToString() ?? ""), folderData.Id);
 
                     if (child != null)
                     {

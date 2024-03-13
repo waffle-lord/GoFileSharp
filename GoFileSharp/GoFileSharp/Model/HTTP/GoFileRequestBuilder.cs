@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 using Newtonsoft.Json;
 
 namespace GoFileSharp.Model.HTTP
@@ -41,13 +42,13 @@ namespace GoFileSharp.Model.HTTP
             return this;
         }
 
-        internal HttpRequestMessage Build()
+        internal HttpRequestMessage BuildAsJson()
         {
             var request = new HttpRequestMessage(_method, _route);
 
             if (!string.IsNullOrWhiteSpace(_token))
             {
-                request.Headers.Authorization = new AuthenticationHeaderValue("bearer", _token);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _token);
             }
 
             if (_params.Count == 0)
@@ -57,7 +58,7 @@ namespace GoFileSharp.Model.HTTP
 
             var json = JsonConvert.SerializeObject(_params);
 
-            request.Content = new StringContent(json);
+            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
             return request;
         }

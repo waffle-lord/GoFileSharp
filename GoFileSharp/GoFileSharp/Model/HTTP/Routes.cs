@@ -47,7 +47,7 @@
         
         internal static string GetAccountId(string token)
         {
-            return $"{_baseUrl}/accounts/getId?token={token}&allDetails=true";
+            return $"{_baseUrl}/accounts/getid?token={token}";
         }
         
         internal static string GetAccountDetails(string token, string accountId)

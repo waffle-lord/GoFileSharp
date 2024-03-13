@@ -27,7 +27,7 @@ namespace GoFileSharp.Model.GoFileData
 
         public string MimeType { get; set; }
         
-        public string SelectedServer { get; set; }
+        public string ServerSelected { get; set; }
         
         public Dictionary<string, DirectLink> DirectLinks { get; set; }
         
@@ -46,7 +46,7 @@ namespace GoFileSharp.Model.GoFileData
             DirectLinks = file.DirectLinks;
             DirectLinks = file.DirectLinks;
             CreateTime = file.CreateTime;
-            SelectedServer = file.SelectedServer;
+            ServerSelected = file.ServerSelected;
             DownloadCount = file.DownloadCount;
             ParentFolderId = file.ParentFolderId;
         }
@@ -60,12 +60,15 @@ namespace GoFileSharp.Model.GoFileData
             Update(file);
         }
 
-        public static bool TryParse(JObject jObject, out FileData fileData)
+        public static bool TryParse(JObject jObject, string parentId, out FileData fileData)
         {
             try
             {
                 fileData = jObject.ToObject<FileData>();
 
+                if (fileData != null) 
+                    fileData.ParentFolderId = parentId;
+                
                 return fileData != null && fileData.Type == "file";
             }
             catch (Exception)
