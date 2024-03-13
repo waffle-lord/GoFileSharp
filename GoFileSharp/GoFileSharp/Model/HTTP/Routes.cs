@@ -79,7 +79,7 @@
             return $"{_baseUrl}/contents/uploadfile".Replace("api", server);
         }
         
-        internal static string PostAccountRsetToken(string token, string accountId)
+        internal static string PostAccountResetToken(string token, string accountId)
         {
             return $"{_baseUrl}/accounts/{accountId}/resettoken?token={token}";
         }

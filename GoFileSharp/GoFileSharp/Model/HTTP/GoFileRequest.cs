@@ -1,9 +1,5 @@
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using GoFileSharp.Model.GoFileData;
 
 namespace GoFileSharp.Model.HTTP
 {
@@ -14,79 +10,39 @@ namespace GoFileSharp.Model.HTTP
             return new HttpRequestMessage(HttpMethod.Get, Routes.GetServers(zoneId));
         }
 
-        public static HttpRequestMessage UploadFile(FileInfo file, string server, string token = "", string folderId = "")
+        public static HttpRequestMessage UploadFile(FileInfo file, string server, string token = null, string folderId = null)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, Routes.PostUploadFile(server));
-
-            var requestParams = new Dictionary<string, string>
-            {
-                { "file", file.FullName },
-            };
-
-            if (!string.IsNullOrWhiteSpace(token))
-            {
-                requestParams.Add("token", token);
-            }
-
-            if (!string.IsNullOrWhiteSpace(folderId))
-            {
-                requestParams.Add("folderId", folderId);
-            }
-
-            request.Content = new FormUrlEncodedContent(requestParams);
-
-            return request;
+            return new GoFileRequestBuilder(HttpMethod.Post, Routes.PostUploadFile(server))
+                .AddRequiredParam("file", file.FullName)
+                .AddOptionalParam("token", token)
+                .AddOptionalParam("folderId", folderId)
+                .Build();
         }
 
-        public static HttpRequestMessage CreateFolder(string token, string parentFolderId, string folderName = "")
+        public static HttpRequestMessage CreateFolder(string token, string parentFolderId, string folderName = null)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, Routes.PostCreateFolder());
-
-            var requestParams = new Dictionary<string, string>
-            {
-                { "token", token },
-                { "parentFolderId", parentFolderId }
-            };
-
-            if (!string.IsNullOrWhiteSpace(folderName))
-            {
-                requestParams.Add("folderName", folderName);
-            }
-
-            request.Content = new FormUrlEncodedContent(requestParams);
-
-            return request;
+            return new GoFileRequestBuilder(HttpMethod.Post, Routes.PostCreateFolder())
+                .WithBearerToken(token)
+                .AddRequiredParam("parentFolderId", parentFolderId)
+                .AddOptionalParam("folderName", folderName)
+                .Build();
         }
 
         public static HttpRequestMessage UpdateContent(string token, string contentId, string attribute, string attributeValue)
         {
-            var request = new HttpRequestMessage(HttpMethod.Put, Routes.PutContentsUpdate(contentId));
-
-            var requestParams = new Dictionary<string, string>
-            {
-                { "token", token },
-                { "attribute", attribute },
-                { "attributeValue", attributeValue }
-            };
-
-            request.Content = new FormUrlEncodedContent(requestParams);
-
-            return request;
+            return new GoFileRequestBuilder(HttpMethod.Put, Routes.PutContentsUpdate(contentId))
+                .WithBearerToken(token)
+                .AddRequiredParam("attribute", attribute)
+                .AddRequiredParam("attributeValue", attributeValue)
+                .Build();
         }
 
         public static HttpRequestMessage DeleteContent(string token, string[] contentIds)
         {
-            var request = new HttpRequestMessage(HttpMethod.Delete, Routes.DeleteContents());
-
-            var requestParams = new Dictionary<string, string>
-            {
-                { "token", token },
-                { "contentsId", string.Join(',', contentIds) }
-            };
-
-            request.Content = new FormUrlEncodedContent(requestParams);
-
-            return request;
+            return new GoFileRequestBuilder(HttpMethod.Delete, Routes.DeleteContents())
+                .WithBearerToken(token)
+                .AddRequiredParam("contendsId", string.Join(',', contentIds))
+                .Build();
         }
 
         public static HttpRequestMessage GetContents(string token, string contentId, bool noCache = false, string passwordHash = "")
@@ -95,37 +51,68 @@ namespace GoFileSharp.Model.HTTP
                 Routes.GetContent(token, contentId, noCache, passwordHash));
         }
 
-        public static HttpRequestMessage CreateDirectLink(string token, string contentId, long expireTimeAsUnixSeconds = 0, string[] sourceIpsAllowed = null, string[] domainsAllowed = null, string[] auth = null)
+        public static HttpRequestMessage CreateDirectLink(string token, string contentId, long? expireTimeAsUnixSeconds = null, string[] sourceIpsAllowed = null, string[] domainsAllowed = null, string[] auth = null)
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, Routes.PostDirectLink(contentId));
-
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            
-            // var directLink = new DirectLink();
-            //
-            // if (expireTimeAsUnixSeconds > 0)
-            // {
-            //     
-            // }
-            //
-            // if (sourceIpsAllowed)
-            // {
-            //     
-            // }
-            //
-            // if (domainsAllowed)
-            // {
-            //     
-            // }
-            //
-            // if (auth != null && auth.Length > 0)
-            // {
-            //     
-            // }
-
-            return request;
+            return new GoFileRequestBuilder(HttpMethod.Post, Routes.PostDirectLink(contentId))
+                .WithBearerToken(token)
+                .AddOptionalParam("expireTime", expireTimeAsUnixSeconds)
+                .AddOptionalParam("sourceIpsAllowed", sourceIpsAllowed)
+                .AddOptionalParam("domainsAllowed", domainsAllowed)
+                .AddOptionalParam("auth", auth)
+                .Build();
         }
-        
+
+        public static HttpRequestMessage UdpateDirectLink(string token, string contentId, string directLinkId,
+            long? expireTimeAsUnixSeconds = null, string[] sourceIpsAllowed = null, string[] domainsAllowed = null,
+            string[] auth = null)
+        {
+            return new GoFileRequestBuilder(HttpMethod.Put, Routes.PutContentsDirectLink(contentId, directLinkId))
+                .WithBearerToken(token)
+                .AddOptionalParam("expireTime", expireTimeAsUnixSeconds)
+                .AddOptionalParam("sourceIpsAllowed", sourceIpsAllowed)
+                .AddOptionalParam("domainsAllowed", domainsAllowed)
+                .AddOptionalParam("auth", auth)
+                .Build();
+        }
+
+        public static HttpRequestMessage DeleteDirectLink(string token, string contentId, string directLinkId)
+        {
+            return new GoFileRequestBuilder(HttpMethod.Delete, Routes.DeleteContentsDirectLink(contentId, directLinkId))
+                .WithBearerToken(token)
+                .Build();
+        }
+
+        public static HttpRequestMessage CopyContents(string token, string[] contentsId, string folderId)
+        {
+            return new GoFileRequestBuilder(HttpMethod.Post, Routes.PostContentsCopy())
+                .WithBearerToken(token)
+                .AddRequiredParam("contentsId", string.Join(',', contentsId))
+                .AddRequiredParam("folderId", folderId)
+                .Build();
+        }
+
+        public static HttpRequestMessage MoveContents(string token, string[] contentsId, string folderId)
+        {
+            return new GoFileRequestBuilder(HttpMethod.Put, Routes.PutContentsMove())
+                .WithBearerToken(token)
+                .AddRequiredParam("contentsId", string.Join(',', contentsId))
+                .AddRequiredParam("folderId", folderId)
+                .Build();
+        }
+
+        public static HttpRequestMessage GetAccountId(string token)
+        {
+            return new HttpRequestMessage(HttpMethod.Get, Routes.GetAccountId(token));
+        }
+
+        public static HttpRequestMessage GetAccountDetails(string token, string accountId)
+        {
+            return new HttpRequestMessage(HttpMethod.Get, Routes.GetAccountDetails(token, accountId));
+        }
+
+        public static HttpRequestMessage ResetToken(string token, string accountsId)
+        {
+            return new HttpRequestMessage(HttpMethod.Post, Routes.PostAccountResetToken(token, accountsId));
+        }
     }
 }
