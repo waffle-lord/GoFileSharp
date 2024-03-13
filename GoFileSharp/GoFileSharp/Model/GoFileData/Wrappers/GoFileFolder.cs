@@ -155,38 +155,102 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// </summary>
         /// <param name="tags">the tags to set on this folder</param>
         /// <returns>Returns true is the option was set, otherwise false</returns>
-        public async Task<bool> SetTags(List<string> tags) => await SetOptionAndRefresh(FolderContentOption.Tags(tags));
+        public async Task<bool> SetTags(List<string> tags) 
+            => await SetOptionAndRefresh(FolderContentOption.Tags(tags));
 
         /// <summary>
         /// Set the password for this folder
         /// </summary>
         /// <param name="password"></param>
         /// <returns>Returns true is the option was set, otherwise false</returns>
-        public async Task<bool> SetPassword(string password) => await SetOptionAndRefresh(FolderContentOption.Password(password));
+        public async Task<bool> SetPassword(string password) 
+            => await SetOptionAndRefresh(FolderContentOption.Password(password));
 
         /// <summary>
         /// Set the expiration date of the folder
         /// </summary>
         /// <param name="date"></param>
         /// <returns>Returns true is the option was set, otherwise false</returns>
-        public async Task<bool> SetExpire(DateTimeOffset date) => await SetOptionAndRefresh(FolderContentOption.Expire(date));
+        public async Task<bool> SetExpire(DateTimeOffset date) 
+            => await SetOptionAndRefresh(FolderContentOption.Expire(date));
 
         /// <summary>
         /// Set the public flag of this folder
         /// </summary>
         /// <param name="value"></param>
         /// <returns>Returns true is the option was set, otherwise false</returns>
-        public async Task<bool> SetPublic(bool value) => await SetOptionAndRefresh(FolderContentOption.Public(value));
+        public async Task<bool> SetPublic(bool value) 
+            => await SetOptionAndRefresh(FolderContentOption.Public(value));
 
         /// <summary>
         /// Set the description of this folder
         /// </summary>
         /// <param name="description"></param>
         /// <returns>Returns true is the option was set, otherwise false</returns>
-        public async Task<bool> SetDescription(string description) => await SetOptionAndRefresh(FolderContentOption.Description(description));
+        public async Task<bool> SetDescription(string description) 
+            => await SetOptionAndRefresh(FolderContentOption.Description(description));
+
+        /// <summary>
+        /// Update the name of this folder
+        /// </summary>
+        /// <param name="newName">The new name of the folder</param>
+        /// <returns>Returns true if the name was updated, otherwise false</returns>
+        public async Task<bool> SetName(string newName)
+            => await SetOptionAndRefresh(FolderContentOption.Name(newName));
         
-        // todo: add direct link
-        // todo: update direct link
-        // todo: delete direct link
+        /// <summary>
+        /// Add a direct link to this folder
+        /// </summary>
+        /// <param name="optionsBuilder">The options builder to use for link options</param>
+        /// <returns>A <see cref="DirectLink"/> or null if the link fails to be added</returns>
+        public async Task<DirectLink?> AddDirectLink(DirectLinkOptionsBuilder? optionsBuilder = null)
+            => await AddDirectLink(optionsBuilder?.Build());
+        
+        private async Task<DirectLink?> AddDirectLink(DirectLinkOptions? options = null)
+        {
+            var response = await _api.AddDirectLink(GoFile.ApiToken, Id, options);
+
+            if (response.IsOK) 
+                await RefreshAsync();
+            
+            return response.Data;
+        }
+        
+        /// <summary>
+        /// Update a direct link on this folder
+        /// </summary>
+        /// <param name="directLink">The direct link to update</param>
+        /// <param name="optionsBuilder">The options builder to use to update the link</param>
+        /// <returns>A <see cref="DirectLink"/> or null if the link fails to be updated</returns>
+        public async Task<DirectLink?> UpdateDirectLink(DirectLink directLink, DirectLinkOptionsBuilder optionsBuilder)
+            => await UpdateDirectLink(directLink.Id, optionsBuilder.Build());
+        
+        private async Task<DirectLink?> UpdateDirectLink(string directLinkId, DirectLinkOptions options)
+        {
+            var response = await _api.UpdateDirectLink(GoFile.ApiToken, Id, directLinkId, options);
+
+            if (response.IsOK)
+                await RefreshAsync();
+
+            return response.Data;
+        }
+
+        /// <summary>
+        /// Remove a direct link from this folder
+        /// </summary>
+        /// <param name="directLink">The direct link to remove</param>
+        /// <returns>Returns true if the link was removed, otherwise false</returns>
+        public async Task<bool> RemoveDirectLink(DirectLink directLink) 
+            => await RemoveDirectLink(directLink.Id);
+        
+        private async Task<bool> RemoveDirectLink(string directLinkId)
+        {
+            var response = await _api.RemoveDirectLink(GoFile.ApiToken, Id, directLinkId);
+
+            if (response.IsOK)
+                await RefreshAsync();
+
+            return response.IsOK;
+        }
     }
 }

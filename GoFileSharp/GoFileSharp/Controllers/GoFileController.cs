@@ -401,5 +401,50 @@ namespace GoFileSharp.Controllers
 
             return await DeserializeResponse<DirectLink>(addLinkResponse);
         }
+
+        /// <summary>
+        /// Update a direct link to content
+        /// </summary>
+        /// <param name="token">The token to use with this request</param>
+        /// <param name="contentId">The id of the content to update the link to</param>
+        /// <param name="directLinkId">The direct link id to update</param>
+        /// <param name="options">The options to update on the link</param>
+        /// <returns>The response from GoFile with the updated direct link info</returns>
+        public async Task<GoFileResponse<DirectLink>> UpdateDirectLink(string token, string contentId, string directLinkId, DirectLinkOptions options)
+        {
+            var updateLinkRequest = GoFileRequest.UpdateDirectLink(token, contentId, directLinkId, options.ExpireTime?.ToUnixTimeSeconds(), 
+                options.SourceIpsAllowed, options.DomainsAllowed, options.Auth);
+
+            var updateLinkResponse = await _client.SendAsync(updateLinkRequest);
+
+            if (updateLinkResponse == null || updateLinkResponse.Content == null)
+            {
+                return GetFailedResponseStatus<DirectLink>(updateLinkResponse);
+            }
+
+            return await DeserializeResponse<DirectLink>(updateLinkResponse);
+        }
+
+        /// <summary>
+        /// Remove a direct link from content
+        /// </summary>
+        /// <param name="token">The token to use with this request</param>
+        /// <param name="contentId">The id of the content to remove the link to</param>
+        /// <param name="directLinkId">The direct link id to remove</param>
+        /// <returns>The response from GoFile on if the deletion was successful</returns>
+        /// <remarks>The response has an empty data object on it</remarks>
+        public async Task<GoFileResponse<object>> RemoveDirectLink(string token, string contentId, string directLinkId)
+        {
+            var deleteLinkRequest = GoFileRequest.DeleteDirectLink(token, contentId, directLinkId);
+
+            var deleteLinkResponse = await _client.SendAsync(deleteLinkRequest);
+
+            if (deleteLinkResponse == null || deleteLinkResponse.Content == null)
+            {
+                return GetFailedResponseStatus<object>(deleteLinkResponse);
+            }
+
+            return await DeserializeResponse<object>(deleteLinkResponse);
+        }
     }
 }

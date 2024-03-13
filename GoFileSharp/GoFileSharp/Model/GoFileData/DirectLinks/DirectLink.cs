@@ -5,6 +5,7 @@ namespace GoFileSharp.Model.GoFileData
 {
     public class DirectLink
     {
+        public string Id { get; set; }
         public List<string> Auth { get; set; }
         public List<string> DomainsAllowed { get; set; }
         public ulong ExpireTime { get; set; }

@@ -28,8 +28,13 @@ namespace GoFileSharp.Model.GoFileData
         public string MimeType { get; set; }
         
         public string ServerSelected { get; set; }
-        
-        public Dictionary<string, DirectLink> DirectLinks { get; set; }
+
+        [JsonProperty("DirectLinks")]
+        private Dictionary<string, DirectLink> DirectLinksDictionary { get; set; } =
+            new Dictionary<string, DirectLink>();
+
+        [JsonIgnore]
+        public List<DirectLink> DirectLinks = new List<DirectLink>();
         
 
         public string Link { get; set; }
@@ -43,7 +48,7 @@ namespace GoFileSharp.Model.GoFileData
             Type = file.Type;
             Link = file.Link;
             MimeType = file.MimeType;
-            DirectLinks = file.DirectLinks;
+            DirectLinksDictionary = file.DirectLinksDictionary;
             DirectLinks = file.DirectLinks;
             CreateTime = file.CreateTime;
             ServerSelected = file.ServerSelected;
@@ -66,8 +71,19 @@ namespace GoFileSharp.Model.GoFileData
             {
                 fileData = jObject.ToObject<FileData>();
 
-                if (fileData != null) 
+                if (fileData != null)
+                {
                     fileData.ParentFolderId = parentId;
+                    
+                    // direct links in a dictionary response don't have an id property
+                    // like the response for creating a link does.
+                    foreach (var linkInfo in fileData.DirectLinksDictionary)
+                    {
+                        var link = linkInfo.Value;
+                        link.Id = linkInfo.Key;
+                        fileData.DirectLinks.Add(link);
+                    }
+                }
                 
                 return fileData != null && fileData.Type == "file";
             }

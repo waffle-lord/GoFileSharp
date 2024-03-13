@@ -52,6 +52,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
             return false;
         }
 
+        // todo: allow passing in a directLink
         /// <summary>
         /// Download this file
         /// </summary>
@@ -61,7 +62,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// <returns>Returns true if the file was downloaded, otherwise false</returns>
         public async Task<bool> DownloadAsync(FileInfo destinationFile, bool overwrite = false, IProgress<double> progress = null)
         {
-            var result = await _api.DownloadFileAsync(DirectLinks.Values.First().Link, destinationFile, overwrite, progress);
+            var result = await _api.DownloadFileAsync(DirectLinks.First().Link, destinationFile, overwrite, progress);
 
             return result.IsOK;
         }
@@ -87,7 +88,6 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
             return result.Data ?? new Dictionary<string, DeleteInfo>();
         }
 
-
         /// <summary>
         /// Update the name of this file
         /// </summary>
@@ -100,26 +100,55 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// Add a direct link to this file
         /// </summary>
         /// <param name="optionsBuilder">The options builder to use for link options</param>
-        /// <returns></returns>
-        public async Task<DirectLink?> AddDirectLink(DirectLinkOptionsBuilder optionsBuilder)
-            => await AddDirectLink(optionsBuilder.Build());
-        
-        /// <summary>
-        /// Add a direct link to this file
-        /// </summary>
-        /// <param name="options">The options to set on the link</param>
         /// <returns>A <see cref="DirectLink"/> or null if the link fails to be added</returns>
-        public async Task<DirectLink?> AddDirectLink(DirectLinkOptions? options = null)
+        public async Task<DirectLink?> AddDirectLink(DirectLinkOptionsBuilder? optionsBuilder = null)
+            => await AddDirectLink(optionsBuilder?.Build());
+        
+        private async Task<DirectLink?> AddDirectLink(DirectLinkOptions? options = null)
         {
             var response = await _api.AddDirectLink(GoFile.ApiToken, Id, options);
 
             if (response.IsOK) 
                 await RefreshAsync();
-
+            
             return response.Data;
         }
         
-        // todo: update direct link
-        // todo: delete direct link
+        /// <summary>
+        /// Update a direct link on this file
+        /// </summary>
+        /// <param name="directLink">The direct link to update</param>
+        /// <param name="optionsBuilder">The options builder to use to update the link</param>
+        /// <returns>A <see cref="DirectLink"/> or null if the link fails to be updated</returns>
+        public async Task<DirectLink?> UpdateDirectLink(DirectLink directLink, DirectLinkOptionsBuilder optionsBuilder)
+            => await UpdateDirectLink(directLink.Id, optionsBuilder.Build());
+        
+        private async Task<DirectLink?> UpdateDirectLink(string directLinkId, DirectLinkOptions options)
+        {
+            var response = await _api.UpdateDirectLink(GoFile.ApiToken, Id, directLinkId, options);
+
+            if (response.IsOK)
+                await RefreshAsync();
+
+            return response.Data;
+        }
+
+        /// <summary>
+        /// Remove a direct link from this file
+        /// </summary>
+        /// <param name="directLink">The direct link to remove</param>
+        /// <returns>Returns true if the link was removed, otherwise false</returns>
+        public async Task<bool> RemoveDirectLink(DirectLink directLink) 
+            => await RemoveDirectLink(directLink.Id);
+        
+        private async Task<bool> RemoveDirectLink(string directLinkId)
+        {
+            var response = await _api.RemoveDirectLink(GoFile.ApiToken, Id, directLinkId);
+
+            if (response.IsOK)
+                await RefreshAsync();
+
+            return response.IsOK;
+        }
     }
 }

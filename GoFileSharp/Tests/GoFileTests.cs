@@ -98,10 +98,9 @@ public class GoFileTests
 
         var response = await _client.SendAsync(request);
         
-        var content = await response.Content.ReadAsStringAsync();
-        
         response.EnsureSuccessStatusCode();
-
+        
+        var content = await response.Content.ReadAsStringAsync();
         var data = JObject.Parse(content);
         Assert.IsNotNull(content);
         Assert.IsTrue(data["status"].Value<string>() == "ok");
@@ -352,7 +351,9 @@ public class GoFileTests
         Assert.IsTrue(await testFile.SetName(newName));
         Assert.IsTrue(testFile.Name == newName);
         Assert.IsNotNull(link);
+        Assert.IsNotNull(link.Id);
         Assert.IsTrue(testFile.DirectLinks.Count > 0);
+        Assert.IsTrue(testFile.DirectLinks.First().Id == link.Id);
     }
 
     [TestMethod]

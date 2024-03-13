@@ -53,7 +53,7 @@ namespace GoFileSharp.Model.HTTP
                 .BuildAsJson();
         }
 
-        public static HttpRequestMessage UdpateDirectLink(string token, string contentId, string directLinkId,
+        public static HttpRequestMessage UpdateDirectLink(string token, string contentId, string directLinkId,
             long? expireTimeAsUnixSeconds = null, string[]? sourceIpsAllowed = null, string[]? domainsAllowed = null,
             string[]? auth = null)
         {
