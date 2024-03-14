@@ -32,7 +32,7 @@ var goFile = new GoFile(new GoFileOptions
 
 ### Get your account details
 ```cs
-var account = await goFile.GetMyAccount();
+var account = await goFile.GetMyAccountAsync();
 ```
 
 ### Get your root folder
