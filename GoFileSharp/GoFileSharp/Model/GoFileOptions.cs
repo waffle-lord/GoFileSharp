@@ -11,6 +11,6 @@ namespace GoFileSharp.Model
         /// The preferred server zone to use for file uploads
         /// </summary>
         /// <remarks>Defaults to 'none' which will use the first server returned from GoFile</remarks>
-        public ServerZone PreferredZone = ServerZone.None;
+        public ServerZone PreferredZone = ServerZone.Any;
     }
 }

@@ -159,6 +159,15 @@ public class GoFileTests
     }
 
     [TestMethod]
+    public async Task GetMyAccount()
+    {
+        var account = await _goFile.GetMyAccount();
+        
+        Assert.IsNotNull(account);
+        Assert.IsTrue(!string.IsNullOrWhiteSpace(account.Id));
+    }
+
+    [TestMethod]
     public async Task GetRootFolder()
     {
         await DelayTwoSeconds();

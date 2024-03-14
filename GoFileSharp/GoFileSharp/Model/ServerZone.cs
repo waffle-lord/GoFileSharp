@@ -4,7 +4,7 @@ namespace GoFileSharp.Model
 {
     public enum ServerZone
     {
-        None,
+        Any,
         [Description("na")]
         NorthAmerica,
         [Description("eu")]
