@@ -104,7 +104,7 @@ namespace GoFileSharp
         /// Get your account details
         /// </summary>
         /// <returns>Returns your account details</returns>
-        public async Task<AccountDetails?> GetMyAccount()
+        public async Task<AccountDetails?> GetMyAccountAsync()
         {
             var accountResponse = await _api.GetAccountDetails(_options.ApiToken);
 
