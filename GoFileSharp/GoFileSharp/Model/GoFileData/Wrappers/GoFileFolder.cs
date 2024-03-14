@@ -14,20 +14,23 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
     /// </summary>
     public class GoFileFolder : FolderData
     {
+        private readonly GoFileOptions _options;
         private GoFileController _api;
 
-        public GoFileFolder(FolderData content, GoFileController controller) : base(content)
+        public GoFileFolder(FolderData content, GoFileOptions options, GoFileController controller) : base(content)
         {
+            _options = options;
             _api = controller;
         }
 
         private async Task<bool> SetOptionAndRefresh(IContentOption option)
         {
-            var status = await _api.SetOption(GoFile.ApiToken, Id, option);
+            var status = await _api.UpdateContent(_options.ApiToken, Id, option);
 
-            if (status) await RefreshAsync();
+            if (status.IsOK) 
+                await RefreshAsync();
 
-            return status;
+            return status.IsOK;
         }
 
         /// <summary>
@@ -36,13 +39,18 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// <returns></returns>
         public async Task<bool> RefreshAsync()
         {
-            var thisFolder = await GoFile.GetFolderAsync(Id, true);
+            var thisFolder = await _api.GetContentAsync(Id, _options.ApiToken, true);
 
-            if(thisFolder == null) return false;
+            if(!thisFolder.IsOK || thisFolder.Data == null) 
+                return false;
 
-            base.Update(thisFolder);
+            if (thisFolder.Data is FolderData folder)
+            {
+                base.Update(folder);
+                return true;
+            }
 
-            return true;
+            return false;
         }
 
         /// <summary>
@@ -52,14 +60,14 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// <returns>Returns the newly created folder as a <see cref="GoFileFolder"/> object or null</returns>
         public async Task<GoFileFolder?> CreateFolderAsync(string folderName)
         {
-            var createFolderResponse = await _api.CreateFolder(GoFile.ApiToken, Id, folderName);
+            var createFolderResponse = await _api.CreateFolder(_options.ApiToken, Id, folderName);
 
             if(!createFolderResponse.IsOK || createFolderResponse.Data == null)
             {
                 return null;
             }
 
-            return new GoFileFolder(createFolderResponse.Data, _api);
+            return new GoFileFolder(createFolderResponse.Data, _options, _api);
         }
 
         /// <summary>
@@ -73,7 +81,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
 
             if(fileContent is FileData file)
             {
-                return new GoFileFile(file, _api);
+                return new GoFileFile(file, _options, _api);
             }
 
             return null;
@@ -82,19 +90,19 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// <summary>
         /// Find a folder by name
         /// </summary>
-        /// <param name="Name">The name of the folder</param>
+        /// <param name="name">The name of the folder</param>
         /// <returns>Returns the folder as a <see cref="GoFileFolder"/> object or null</returns>
-        public async Task<GoFileFolder?> FindFolderAsync(string Name)
+        public async Task<GoFileFolder?> FindFolderAsync(string name)
         {
-            var folderContent = Children.SingleOrDefault(x => x.Name == Name);
-
+            var folderContent = Children.SingleOrDefault(x => x.Name == name);
+            
             if(folderContent is FolderData folderData)
             {
-                var folder = await GoFile.GetFolderAsync(folderData.Id, true);
+                var folderResponse = await _api.GetContentAsync(folderData.Id, _options.ApiToken, true);
 
-                if(folder != null)
+                if(folderResponse.IsOK && folderResponse.Data != null && folderResponse.Data is FolderData folder)
                 {
-                    return new GoFileFolder(folder, _api);
+                    return new GoFileFolder(folder, _options, _api);
                 }
             }
 
@@ -109,7 +117,14 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// <returns>Returns the uplaoded file as a <see cref="GoFileFile"/> object</returns>
         public async Task<GoFileFile?> UploadIntoAsync(FileInfo file, IProgress<double> progress = null)
         {
-            return await GoFile.UploadFileAsync(file, progress, Id);
+            var response =  await _api.UploadFileAsync(file, _options.PreferredZone, _options.ApiToken, progress, Id);
+            
+            if(!response.IsOK || response.Data == null)
+            {
+                return null;
+            }
+
+            return await GoFileHelper.TryGetUplaodedFile(response.Data, _options, _api);
         }
 
         /// <summary>
@@ -117,11 +132,11 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// </summary>
         /// <returns>Returns true if the folder was deleted, otherwise false</returns>
         /// <exception cref="NotImplementedException"></exception>
-        public async Task<DeleteInfo> DeleteAsync()
+        public async Task<Dictionary<string, DeleteInfo>> DeleteAsync()
         {
-            var response = await _api.DeleteContent(GoFile.ApiToken, new[] { Id });
+            var response = await _api.DeleteContent(_options.ApiToken, new[] { Id });
 
-            return response.Data ?? DeleteInfo.NoData();
+            return response.Data ?? new Dictionary<string, DeleteInfo>();
         }
 
         /// <summary>
@@ -143,7 +158,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         {
             var contentIds = content.Select(x => x.Id).ToArray();
 
-            var copyResponse = await _api.CopyContent(GoFile.ApiToken, contentIds, Id);
+            var copyResponse = await _api.CopyContent(_options.ApiToken, contentIds, Id);
 
             return copyResponse.IsOK;
         }
@@ -153,34 +168,102 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// </summary>
         /// <param name="tags">the tags to set on this folder</param>
         /// <returns>Returns true is the option was set, otherwise false</returns>
-        public async Task<bool> SetTags(List<string> tags) => await SetOptionAndRefresh(FolderContentOption.Tags(tags));
+        public async Task<bool> SetTags(List<string> tags) 
+            => await SetOptionAndRefresh(FolderContentOption.Tags(tags));
 
         /// <summary>
         /// Set the password for this folder
         /// </summary>
         /// <param name="password"></param>
         /// <returns>Returns true is the option was set, otherwise false</returns>
-        public async Task<bool> SetPassword(string password) => await SetOptionAndRefresh(FolderContentOption.Password(password));
+        public async Task<bool> SetPassword(string password) 
+            => await SetOptionAndRefresh(FolderContentOption.Password(password));
 
         /// <summary>
         /// Set the expiration date of the folder
         /// </summary>
         /// <param name="date"></param>
         /// <returns>Returns true is the option was set, otherwise false</returns>
-        public async Task<bool> SetExpire(DateTimeOffset date) => await SetOptionAndRefresh(FolderContentOption.Expire(date));
+        public async Task<bool> SetExpire(DateTimeOffset date) 
+            => await SetOptionAndRefresh(FolderContentOption.Expire(date));
 
         /// <summary>
         /// Set the public flag of this folder
         /// </summary>
         /// <param name="value"></param>
         /// <returns>Returns true is the option was set, otherwise false</returns>
-        public async Task<bool> SetPublic(bool value) => await SetOptionAndRefresh(FolderContentOption.Public(value));
+        public async Task<bool> SetPublic(bool value) 
+            => await SetOptionAndRefresh(FolderContentOption.Public(value));
 
         /// <summary>
         /// Set the description of this folder
         /// </summary>
         /// <param name="description"></param>
         /// <returns>Returns true is the option was set, otherwise false</returns>
-        public async Task<bool> SetDescription(string description) => await SetOptionAndRefresh(FolderContentOption.Description(description));
+        public async Task<bool> SetDescription(string description) 
+            => await SetOptionAndRefresh(FolderContentOption.Description(description));
+
+        /// <summary>
+        /// Update the name of this folder
+        /// </summary>
+        /// <param name="newName">The new name of the folder</param>
+        /// <returns>Returns true if the name was updated, otherwise false</returns>
+        public async Task<bool> SetName(string newName)
+            => await SetOptionAndRefresh(FolderContentOption.Name(newName));
+        
+        /// <summary>
+        /// Add a direct link to this folder
+        /// </summary>
+        /// <param name="optionsBuilder">The options builder to use for link options</param>
+        /// <returns>A <see cref="DirectLink"/> or null if the link fails to be added</returns>
+        public async Task<DirectLink?> AddDirectLink(DirectLinkOptionsBuilder? optionsBuilder = null)
+            => await AddDirectLink(optionsBuilder?.Build());
+        
+        private async Task<DirectLink?> AddDirectLink(DirectLinkOptions? options = null)
+        {
+            var response = await _api.AddDirectLink(_options.ApiToken, Id, options);
+
+            if (response.IsOK) 
+                await RefreshAsync();
+            
+            return response.Data;
+        }
+        
+        /// <summary>
+        /// Update a direct link on this folder
+        /// </summary>
+        /// <param name="directLink">The direct link to update</param>
+        /// <param name="optionsBuilder">The options builder to use to update the link</param>
+        /// <returns>A <see cref="DirectLink"/> or null if the link fails to be updated</returns>
+        public async Task<DirectLink?> UpdateDirectLink(DirectLink directLink, DirectLinkOptionsBuilder optionsBuilder)
+            => await UpdateDirectLink(directLink.Id, optionsBuilder.Build());
+        
+        private async Task<DirectLink?> UpdateDirectLink(string directLinkId, DirectLinkOptions options)
+        {
+            var response = await _api.UpdateDirectLink(_options.ApiToken, Id, directLinkId, options);
+
+            if (response.IsOK)
+                await RefreshAsync();
+
+            return response.Data;
+        }
+
+        /// <summary>
+        /// Remove a direct link from this folder
+        /// </summary>
+        /// <param name="directLink">The direct link to remove</param>
+        /// <returns>Returns true if the link was removed, otherwise false</returns>
+        public async Task<bool> RemoveDirectLink(DirectLink directLink) 
+            => await RemoveDirectLink(directLink.Id);
+        
+        private async Task<bool> RemoveDirectLink(string directLinkId)
+        {
+            var response = await _api.RemoveDirectLink(_options.ApiToken, Id, directLinkId);
+
+            if (response.IsOK)
+                await RefreshAsync();
+
+            return response.IsOK;
+        }
     }
 }

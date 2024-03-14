@@ -1,5 +1,10 @@
 using System.Diagnostics;
+using System.Net;
+using System.Text;
 using GoFileSharp;
+using GoFileSharp.Model;
+using GoFileSharp.Model.GoFileData;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Tests;
@@ -7,6 +12,7 @@ namespace Tests;
 [TestClass]
 public class GoFileTests
 {
+    private static GoFile _goFile;
     private static Config _config;
     private static HttpClient _client = new();
     private static FileInfo _testFile = new FileInfo("../../../Data/test.txt");
@@ -36,11 +42,30 @@ public class GoFileTests
         return $"GFS_TEST_{new string(nameTail)}";
     }
 
+    private static async Task<string> Setup_GetAccountId()
+    {
+        Debug.WriteLine($"-- [SETUP] Getting Account Id --");
+        
+        var response = await _client.GetAsync($"https://api.gofile.io/accounts/getid?token={_config.ApiToken}");
+        
+        response.EnsureSuccessStatusCode();
+        
+        var content = await response.Content.ReadAsStringAsync();
+        var data = JObject.Parse(content);
+        Assert.IsNotNull(content);
+        Assert.IsTrue(data["status"].Value<string>() == "ok");
+        var accountId = data["data"]["id"].Value<string>();
+        
+        Assert.IsTrue(!string.IsNullOrWhiteSpace(accountId));
+
+        return accountId;
+    }
     private static async Task<string> Setup_GetRootFolder()
     {
         Debug.WriteLine($"-- [SETUP] Getting Root Folder --");
-        
-        var response = await _client.GetAsync($"https://api.gofile.io/getAccountDetails?token={_config.ApiToken}");
+
+        var accountId = await Setup_GetAccountId();
+        var response = await _client.GetAsync($"https://api.gofile.io/accounts/{accountId}?token={_config.ApiToken}");
         
         response.EnsureSuccessStatusCode();
         
@@ -67,21 +92,23 @@ public class GoFileTests
             { "parentFolderId", rootId },
             { "folderName", _testFolderName}
         };
+
+        var json = JsonConvert.SerializeObject(requestDictionary);
         
-        var request = new HttpRequestMessage(HttpMethod.Put, "https://api.gofile.io/createFolder")
+        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.gofile.io/contents/createfolder")
         {
-            Content = new FormUrlEncodedContent(requestDictionary)
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
         };
 
         var response = await _client.SendAsync(request);
         
         response.EnsureSuccessStatusCode();
-
+        
         var content = await response.Content.ReadAsStringAsync();
         var data = JObject.Parse(content);
         Assert.IsNotNull(content);
         Assert.IsTrue(data["status"].Value<string>() == "ok");
-        _testFolderId = data["data"]["id"].Value<string>();
+        _testFolderId = data["data"]["folderId"].Value<string>();
         
         Assert.IsTrue(!string.IsNullOrWhiteSpace(_testFolderId));
     }
@@ -90,15 +117,17 @@ public class GoFileTests
     {
         Debug.WriteLine($"-- [SETUP] Removing Test Folder: {_testFolderName} --");
         
-        var requestDictionary = new Dictionary<string, string>
+        var requestParams = new Dictionary<string, string>
         {
             { "token", _config.ApiToken },
             { "contentsId", _testFolderId }
         };
-        
-        var request = new HttpRequestMessage(HttpMethod.Delete, "https://api.gofile.io/deleteContent")
+
+        var json = JsonConvert.SerializeObject(requestParams);
+
+        var request = new HttpRequestMessage(HttpMethod.Delete, "https://api.gofile.io/contents")
         {
-            Content = new FormUrlEncodedContent(requestDictionary)
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
         };
         
         var deleted = await _client.SendAsync(request);
@@ -113,7 +142,11 @@ public class GoFileTests
         Debug.WriteLine("=== Assembly Setup ===");
         _config = Config.Load();
 
-        GoFile.ApiToken = _config.ApiToken;
+        _goFile = new GoFile(new GoFileOptions
+        {
+            ApiToken = _config.ApiToken
+        });
+        
         Setup_CreateTestFolder().GetAwaiter().GetResult();
     }
 
@@ -126,10 +159,19 @@ public class GoFileTests
     }
 
     [TestMethod]
+    public async Task GetMyAccount()
+    {
+        var account = await _goFile.GetMyAccount();
+        
+        Assert.IsNotNull(account);
+        Assert.IsTrue(!string.IsNullOrWhiteSpace(account.Id));
+    }
+
+    [TestMethod]
     public async Task GetRootFolder()
     {
         await DelayTwoSeconds();
-        var root = await GoFile.GetMyRootFolderAsync();
+        var root = await _goFile.GetMyRootFolderAsync();
 
         Assert.IsNotNull(root);
         Assert.IsTrue(root.Name == "root");
@@ -144,11 +186,12 @@ public class GoFileTests
         await DelayTwoSeconds();
 
         var folderName = "createTest";
-        var testFolder = await GoFile.GetFolderAsync(_testFolderId);
+        var testFolder = await _goFile.GetFolderAsync(_testFolderId);
 
         var createdFolder = await testFolder.CreateFolderAsync(folderName);
 
         Assert.IsNotNull(createdFolder);
+        Assert.IsNotNull(createdFolder.Id);
         Assert.IsTrue(createdFolder.ParentFolderId == testFolder.Id);
         Assert.IsTrue(createdFolder.Name == folderName);
         Assert.IsTrue(createdFolder.Type == "folder");
@@ -159,7 +202,7 @@ public class GoFileTests
     {
         await DelayTwoSeconds();
 
-        var folder = await GoFile.GetFolderAsync(_testFolderId);
+        var folder = await _goFile.GetFolderAsync(_testFolderId);
         
         Assert.IsNotNull(folder);
         Assert.IsTrue(_testFolderId == folder.Id);
@@ -172,7 +215,7 @@ public class GoFileTests
     {
         await DelayTwoSeconds();
 
-        var testFolder = await GoFile.GetFolderAsync(_testFolderId);
+        var testFolder = await _goFile.GetFolderAsync(_testFolderId);
         var findFileFolder = await testFolder.CreateFolderAsync("findFile");
 
         await findFileFolder.UploadIntoAsync(_testFile);
@@ -193,7 +236,7 @@ public class GoFileTests
         await DelayTwoSeconds();
 
         var name = "searchTest";
-        var testFolder = await GoFile.GetFolderAsync(_testFolderId);
+        var testFolder = await _goFile.GetFolderAsync(_testFolderId);
         await testFolder.CreateFolderAsync(name);
 
         await testFolder.RefreshAsync();
@@ -212,7 +255,7 @@ public class GoFileTests
 
         Debug.WriteLine($"Uploading: {_testFile.FullName}");
         
-        var testFolder = await GoFile.GetFolderAsync(_testFolderId);
+        var testFolder = await _goFile.GetFolderAsync(_testFolderId);
 
         var uploadedFile = await testFolder.UploadIntoAsync(_testFile);
         
@@ -227,7 +270,7 @@ public class GoFileTests
     {
         await DelayTwoSeconds();
 
-        var testFolder = await GoFile.GetFolderAsync(_testFolderId);
+        var testFolder = await _goFile.GetFolderAsync(_testFolderId);
         var copyFileFolder = await testFolder.CreateFolderAsync("copyFileToSource");
         var testFile = await copyFileFolder.UploadIntoAsync(_testFile);
         var copyTargetFolder = await copyFileFolder.CreateFolderAsync("copyFileToTarget");
@@ -249,7 +292,7 @@ public class GoFileTests
     {
         await DelayTwoSeconds();
 
-        var testFolder = await GoFile.GetFolderAsync(_testFolderId);
+        var testFolder = await _goFile.GetFolderAsync(_testFolderId);
         var sourceFolder = await testFolder.CreateFolderAsync("copyFolderToSource");
         var targetFolder = await testFolder.CreateFolderAsync("copyFolderToTarget");
     
@@ -281,7 +324,7 @@ public class GoFileTests
     {
         await DelayTwoSeconds();
 
-        var testFolder = await GoFile.GetFolderAsync(_testFolderId);
+        var testFolder = await _goFile.GetFolderAsync(_testFolderId);
         var sourceFolder = await testFolder.CreateFolderAsync("copyIntoSource");
         var targetFolder = await testFolder.CreateFolderAsync("copyIntoTarget");
     
@@ -314,12 +357,22 @@ public class GoFileTests
     {
         await DelayTwoSeconds();
 
-        var testFolder = await GoFile.GetFolderAsync(_testFolderId);
+        var newName = "my new name.txt";
+
+        var testFolder = await _goFile.GetFolderAsync(_testFolderId);
         var fileOptionsFolder = await testFolder.CreateFolderAsync("fileOptions");
         var testFile = await fileOptionsFolder.UploadIntoAsync(_testFile);
 
-        Assert.IsTrue(await testFile.SetDirectLink(true));
-        Assert.IsNotNull(testFile.DirectLink);
+        var link = await testFile.AddDirectLink();
+        
+        Assert.IsTrue(await testFile.SetName(newName));
+        
+        Assert.IsTrue(testFile.Name == newName);
+        
+        Assert.IsNotNull(link);
+        Assert.IsNotNull(link.Id);
+        Assert.IsTrue(testFile.DirectLinks.Count > 0);
+        Assert.IsTrue(testFile.DirectLinks.First().Id == link.Id);
     }
 
     [TestMethod]
@@ -328,19 +381,24 @@ public class GoFileTests
         var desc = "This is a description";
         var tags = new List<string>() { "testing", "stuff" };
         var pass = "test123";
+        var newName = "my new name folder";
         DateTimeOffset expiry = DateTime.Now.AddDays(5);
         
         await DelayTwoSeconds();
 
-        var testFolder = await GoFile.GetFolderAsync(_testFolderId);
+        var testFolder = await _goFile.GetFolderAsync(_testFolderId);
         var folderOptionsFolder = await testFolder.CreateFolderAsync("folderOptions");
 
+        var link = await folderOptionsFolder.AddDirectLink();
+
+        Assert.IsTrue(await folderOptionsFolder.SetName(newName));
         Assert.IsTrue(await folderOptionsFolder.SetDescription(desc));
         Assert.IsTrue(await folderOptionsFolder.SetTags(tags));
         Assert.IsTrue(await folderOptionsFolder.SetPublic(true));
         Assert.IsTrue(await folderOptionsFolder.SetExpire(expiry));
         Assert.IsTrue(await folderOptionsFolder.SetPassword(pass));
         
+        Assert.IsTrue(folderOptionsFolder.Name == newName);
         Assert.IsNotNull(folderOptionsFolder.Description);
         Assert.IsNotNull(folderOptionsFolder.Expire);
         Assert.IsNotNull(folderOptionsFolder.Tags);
@@ -349,6 +407,11 @@ public class GoFileTests
         Assert.IsTrue(folderOptionsFolder.Tags == string.Join(",", tags));
         Assert.IsTrue(folderOptionsFolder.Description == desc);
         Assert.IsTrue(folderOptionsFolder.Expire == expiry.ToUnixTimeSeconds());
+        
+        Assert.IsNotNull(link);
+        Assert.IsNotNull(link.Id);
+        Assert.IsTrue(folderOptionsFolder.DirectLinks.Count > 0);
+        Assert.IsTrue(folderOptionsFolder.DirectLinks.First().Id == link.Id);
     }
     
     [TestMethod]
@@ -356,13 +419,17 @@ public class GoFileTests
     {
         await DelayTwoSeconds();
 
-        var testFolder = await GoFile.GetFolderAsync(_testFolderId);
+        var testFolder = await _goFile.GetFolderAsync(_testFolderId);
         var delFolder = await testFolder.CreateFolderAsync("delFolder");
         await delFolder.UploadIntoAsync(_testFile);
 
         var delInfo = await delFolder.DeleteAsync();
-        Assert.IsTrue(delInfo.IsOk);
-        Assert.IsNull(await GoFile.GetFolderAsync(delFolder.Id, true));
+        Assert.IsTrue(delInfo.Count > 0);
+        foreach (var info in delInfo.Values)
+        {
+            Assert.IsTrue(info.IsOk());
+        }
+        Assert.IsNull(await _goFile.GetFolderAsync(delFolder.Id, true));
     }
 
     [TestMethod]
@@ -370,14 +437,63 @@ public class GoFileTests
     {
         await DelayTwoSeconds();
 
-        var testFolder = await GoFile.GetFolderAsync(_testFolderId);
+        var testFolder = await _goFile.GetFolderAsync(_testFolderId);
         var delFileFolder = await testFolder.CreateFolderAsync("delFile");
         var delFile = await delFileFolder.UploadIntoAsync(_testFile);
 
         var delInfo = await delFile.DeleteAsync();
         
-        Assert.IsTrue(delInfo.IsOk);
+        Assert.IsTrue(delInfo.Count > 0);
+        foreach (var info in delInfo.Values)
+        {
+            Assert.IsTrue(info.IsOk());
+        }
         await delFileFolder.RefreshAsync();
         Assert.IsTrue(delFileFolder.Children.Count == 0);
+    }
+
+    [TestMethod]
+    public async Task DirectLinkOptions()
+    {
+        await DelayTwoSeconds();
+
+        var testFolder = await _goFile.GetFolderAsync(_testFolderId);
+        var linkOptionsFolder = await testFolder.CreateFolderAsync("linkOptions");
+        var linkOptionsFile = await linkOptionsFolder.UploadIntoAsync(_testFile);
+
+        DateTimeOffset expireTime = DateTime.Now.AddDays(5);
+        string[] auths = ["test:blah", "another:thing"];
+        string[] domains = ["google.com", "waffle-lord.com"];
+        string[] sourceIps = ["192.168.1.1", "192.168.1.2"];
+
+        var optionsBuilder = new DirectLinkOptionsBuilder()
+            .WithExpireTime(expireTime)
+            .AddAuth("test", "blah")
+            .AddAuth("another", "thing")
+            .AddAllowedDomain("google.com")
+            .AddAllowedDomain("waffle-lord.com")
+            .AddAllowedSourceIp(IPAddress.Parse("192.168.1.1"))
+            .AddAllowedSourceIp(IPAddress.Parse("192.168.1.2"));
+
+
+        var link = await linkOptionsFile.AddDirectLink(optionsBuilder);
+        
+        Assert.IsNotNull(link);
+        Assert.IsTrue(link.ExpireTime == expireTime.ToUnixTimeSeconds());
+
+        foreach (var ip in sourceIps)
+        {
+            Assert.IsTrue(link.SourceIpsAllowed.Contains(ip));
+        }
+        
+        foreach (var domain in domains)
+        {
+            Assert.IsTrue(link.DomainsAllowed.Contains(domain));
+        }
+        
+        foreach (var login in auths)
+        {
+            Assert.IsTrue(link.Auth.Contains(login));
+        }
     }
 }

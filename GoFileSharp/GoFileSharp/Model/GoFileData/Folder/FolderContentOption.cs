@@ -15,6 +15,8 @@ namespace GoFileSharp.Model.GoFileData
             Value = value;
         }
 
+        public static FolderContentOption Name(string newName) => new FolderContentOption("name", newName);
+
         public static FolderContentOption Public(bool value) => new FolderContentOption("public", value.ToString().ToLower());
 
         public static FolderContentOption Password(string password) => new FolderContentOption("password", password);
@@ -22,7 +24,7 @@ namespace GoFileSharp.Model.GoFileData
         public static FolderContentOption Description(string description) => new FolderContentOption("description", description);
 
         public static FolderContentOption Expire(DateTimeOffset expireDate) =>
-            new FolderContentOption("expire", expireDate.ToUnixTimeSeconds().ToString());
+            new FolderContentOption("expiry", expireDate.ToUnixTimeSeconds().ToString());
 
         public static FolderContentOption Tags(List<string> tags) => new FolderContentOption("tags", string.Join(',', tags));
     }

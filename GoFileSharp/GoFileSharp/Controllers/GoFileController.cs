@@ -9,6 +9,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using GoFileSharp.Extensions;
 using GoFileSharp.Interfaces;
+using GoFileSharp.Model;
+using GoFileSharp.Model.GoFileData.Wrappers;
 using Newtonsoft.Json.Linq;
 
 namespace GoFileSharp.Controllers
@@ -61,9 +63,9 @@ namespace GoFileSharp.Controllers
         /// Get a server from GoFile
         /// </summary>
         /// <returns>Returns the response from GoFile with the server info or null</returns>
-        public async Task<GoFileResponse<ServerInfo>> GetServerAsync()
+        public async Task<GoFileResponse<ServerInfo>> GetServersAsync(string? zoneId = null)
         {
-            var serverRequest = new HttpRequestMessage(HttpMethod.Get, Routes.GetServer());
+            var serverRequest = GoFileRequest.GetServers(zoneId);
 
             var serverResponse = await _client.SendAsync(serverRequest);
 
@@ -80,16 +82,18 @@ namespace GoFileSharp.Controllers
         /// </summary>
         /// <param name="contentId">The contentId of the folder to request content info for</param>
         /// <param name="token">The token to use with this request</param>
+        /// <param name="noCache">Whether or not to use GoFile's cache</param>
+        /// <param name="passwordHash">The SHA256 password hash to use if the content is password protected</param>
         /// <returns>Returns the response from GoFile with the content info or null</returns>
-        public async Task<GoFileResponse<FolderData>> GetContentAsync(string contentId, string token, bool noCache = false)
+        public async Task<GoFileResponse<IContent>> GetContentAsync(string contentId, string token, bool noCache = false, string? passwordHash = null)
         {
-            var contentRequest = new HttpRequestMessage(HttpMethod.Get, Routes.GetContent(contentId, token, noCache));
+            var contentRequest = GoFileRequest.GetContents(token, contentId, noCache, passwordHash);
 
             var contentResponse = await _client.SendAsync(contentRequest);
 
             if(contentResponse == null || contentResponse.Content == null)
             {
-                return GetFailedResponseStatus<FolderData>(contentResponse);
+                return GetFailedResponseStatus<IContent>(contentResponse);
             }
 
             var content = await contentResponse.Content.ReadAsStringAsync();
@@ -101,15 +105,17 @@ namespace GoFileSharp.Controllers
 
             if(status != "ok" || data == null || !data.HasValues)
             {
-                return new GoFileResponse<FolderData>() { Status = status};
+                return new GoFileResponse<IContent>() { Status = status};
             }
+            
+            // todo: add file content here if it ever gets added. Currently only folders are allowed
             
             if (FolderData.TryParse(data, out FolderData folder))
             {
-                return new GoFileResponse<FolderData>() { Status = status, Data = folder };
+                return new GoFileResponse<IContent>() { Status = status, Data = folder };
             }
 
-            return new GoFileResponse<FolderData>() { Status = "Failed to parse data" };
+            return new GoFileResponse<IContent>() { Status = "Failed to parse data" };
         }
 
         /// <summary>
@@ -118,13 +124,14 @@ namespace GoFileSharp.Controllers
         /// <param name="directDownloadLink">The direct download link to the file</param>
         /// <param name="destinationFile">The destination file info</param>
         /// <param name="progress">A progress object to use to track download progress</param>
-        /// <returns></returns>
-        public async Task<GoFileResponse<FileData>> DownloadFileAsync(string directDownloadLink, FileInfo destinationFile, bool overwrite = false, IProgress<double> progress = null)
+        /// <returns>Returns a GoFile response</returns>
+        /// <remarks>This response is not deserialized from GoFile and is only used for consistency</remarks>
+        public async Task<GoFileResponse<object>> DownloadFileAsync(string directDownloadLink, FileInfo destinationFile, bool overwrite = false, IProgress<double> progress = null)
         {
             try
             {
                 if (destinationFile.Exists && !overwrite)
-                    return new GoFileResponse<FileData>() { Status = $"File already exists: {destinationFile.FullName}" };
+                    return new GoFileResponse<object>() { Status = $"File already exists: {destinationFile.FullName}" };
 
                 Directory.CreateDirectory(destinationFile.Directory.FullName);
 
@@ -139,11 +146,11 @@ namespace GoFileSharp.Controllers
                 if (destinationFile.Exists)
                     status = "ok";
 
-                return new GoFileResponse<FileData>() { Status = status};
+                return new GoFileResponse<object>() { Status = status};
             }
             catch(Exception ex)
             {
-                return new GoFileResponse<FileData>() { Status = ex.Message};
+                return new GoFileResponse<object>() { Status = ex.Message};
             }
         }
 
@@ -153,8 +160,8 @@ namespace GoFileSharp.Controllers
         /// <param name="file">The file to upload</param>
         /// <param name="token">The token to use with this request</param>
         /// <param name="progress">A progress object to report progress updates to</param>
-        /// <returns></returns>
-        public async Task<GoFileResponse<UploadInfo>> UploadFileAsync(System.IO.FileInfo file, string token = null, IProgress<double> progress = null, string folderId = null)
+        /// <returns>The response from GoFile including the uploaded file info</returns>
+        public async Task<GoFileResponse<UploadInfo>> UploadFileAsync(FileInfo file, ServerZone zone, string token = null, IProgress<double> progress = null, string folderId = null)
         {
             file.Refresh();
 
@@ -162,8 +169,8 @@ namespace GoFileSharp.Controllers
             {
                 new GoFileResponse<UploadInfo>() { Status = $"File does not exist: {file.FullName}" };
             }
-
-            var serverResponse = await GetServerAsync();
+            
+            var serverResponse = await GetServersAsync(zone.GetDescription());
 
             if (!serverResponse.IsOK || serverResponse.Data == null)
             {
@@ -176,6 +183,8 @@ namespace GoFileSharp.Controllers
             {
                 using (FileStream fileToUpload = file.OpenRead())
                 {
+                    // this one isn't using GoFileRequest because of this stream
+                    // maybe there is a better way, but I'm lazy so ... eh..
                     var form = new MultipartFormDataContent
                     {
                         { new StreamContent(fileToUpload), "file", file.Name }
@@ -187,7 +196,7 @@ namespace GoFileSharp.Controllers
                     if ((folderId != null))
                         form.Add(new StringContent(folderId), "folderId");
 
-                    var uploadRequest = new HttpRequestMessage(HttpMethod.Post, Routes.UploadFile(serverResponse.Data.Server))
+                    var uploadRequest = new HttpRequestMessage(HttpMethod.Post, Routes.PostUploadFile(serverResponse.Data.Servers[0].Name))
                     {
                         Content = form
                     };
@@ -218,13 +227,44 @@ namespace GoFileSharp.Controllers
         }
 
         /// <summary>
+        /// Get the account id for the provided token
+        /// </summary>
+        /// <param name="token">The token to use with this request</param>
+        /// <returns>The GoFile response with an account id</returns>
+        public async Task<GoFileResponse<AccountId>> GetAccountId(string token)
+        {
+            var idRequest = GoFileRequest.GetAccountId(token);
+
+            var response = await _client.SendAsync(idRequest);
+            
+            if (response == null || response.Content == null)
+            {
+                return GetFailedResponseStatus<AccountId>(response);
+            }
+
+            return await DeserializeResponse<AccountId>(response);
+        }
+
+        /// <summary>
         /// Get the account details for the token provided
         /// </summary>
         /// <param name="token">The token to use with this request</param>
-        /// <returns></returns>
-        public async Task<GoFileResponse<AccountDetails>> GetAccountDetails(string token)
+        /// <returns>The GoFile response with the account details</returns>
+        public async Task<GoFileResponse<AccountDetails>> GetAccountDetails(string token, string? accountId = null)
         {
-            var accountRequest = new HttpRequestMessage(HttpMethod.Get, Routes.GetAccountDetails(token));
+            if (accountId == null)
+            {
+                var idResponse = await GetAccountId(token);
+                
+                accountId = idResponse.Data?.Id;
+
+                if (!idResponse.IsOK || accountId == null)
+                {
+                    return new GoFileResponse<AccountDetails>() { Status = idResponse.Status };
+                }
+            }
+
+            var accountRequest = GoFileRequest.GetAccountDetails(token, accountId);
 
             var accountResponse = await _client.SendAsync(accountRequest);
 
@@ -242,19 +282,10 @@ namespace GoFileSharp.Controllers
         /// <param name="token">The token to use with this request</param>
         /// <param name="parentFolderId">The parent folder Id to create the new folder in</param>
         /// <param name="folderName">The name of the new folder</param>
-        /// <returns></returns>
-        public async Task<GoFileResponse<FolderData>> CreateFolder(string token, string parentFolderId, string folderName)
+        /// <returns>The GoFile response with the created folder</returns>
+        public async Task<GoFileResponse<FolderData>> CreateFolder(string token, string parentFolderId, string? folderName = null)
         {
-            var createFolderRequest = new HttpRequestMessage(HttpMethod.Put, Routes.CreateFolder());
-
-            var requestDictionary = new Dictionary<string, string>
-            {
-                { "token", token },
-                { "parentFolderId", parentFolderId },
-                { "folderName", folderName }
-            };
-
-            createFolderRequest.Content = new FormUrlEncodedContent(requestDictionary);
+            var createFolderRequest = GoFileRequest.CreateFolder(token, parentFolderId, folderName);
 
             var createFolderResponse = await _client.SendAsync(createFolderRequest);
 
@@ -272,19 +303,11 @@ namespace GoFileSharp.Controllers
         /// <param name="token">The token to use with this request</param>
         /// <param name="contentIds">The Ids of the content to copy</param>
         /// <param name="destinationFolderId">The folder to copy the contents into</param>
-        /// <returns></returns>
+        /// <returns>Returns the response from GoFile</returns>
+        /// <remarks>The response contains an empty data object</remarks>
         public async Task<GoFileResponse<object>> CopyContent(string token, string[] contentIds, string destinationFolderId)
         {
-            var copyRequest = new HttpRequestMessage(HttpMethod.Put, Routes.CopyContent());
-
-            var requestDictionary = new Dictionary<string, string>
-            {
-                { "token", token },
-                { "contentsId", string.Join(',', contentIds) },
-                { "folderIdDest", destinationFolderId }
-            };
-
-            copyRequest.Content = new FormUrlEncodedContent(requestDictionary);
+            var copyRequest = GoFileRequest.CopyContents(token, contentIds, destinationFolderId);
 
             var copyResponse = await _client.SendAsync(copyRequest);
 
@@ -301,32 +324,19 @@ namespace GoFileSharp.Controllers
         /// </summary>
         /// <param name="token">The token to use with this request</param>
         /// <param name="contentIds">The content Ids to delete</param>
-        /// <returns></returns>
-        public async Task<GoFileResponse<DeleteInfo>> DeleteContent(string token, string[] contentIds)
+        /// <returns>The response from GoFile with a dictionary of deletion info</returns>
+        public async Task<GoFileResponse<Dictionary<string, DeleteInfo>>> DeleteContent(string token, string[] contentIds)
         {
-            var deleteRequest = new HttpRequestMessage(HttpMethod.Delete, Routes.DeleteContent());
-
-            var requestDictionary = new Dictionary<string, string>
-            {
-                { "token", token },
-                { "contentsId", string.Join(',', contentIds) }
-            };
-
-            deleteRequest.Content = new FormUrlEncodedContent(requestDictionary);
+            var deleteRequest = GoFileRequest.DeleteContent(token, contentIds);
 
             var deleteResponse = await _client.SendAsync(deleteRequest);
 
             if(deleteResponse == null || deleteResponse.Content == null)
             {
-                return GetFailedResponseStatus<DeleteInfo>(deleteResponse);
+                return GetFailedResponseStatus<Dictionary<string, DeleteInfo>>(deleteResponse);
             }
             
-            var response = await DeserializeResponse<Dictionary<string, string>>(deleteResponse);
-
-            if (response.Data == null)
-                return new GoFileResponse<DeleteInfo>() { Status = response.Status };
-                
-            return new GoFileResponse<DeleteInfo>() { Status = response.Status, Data = DeleteInfo.WithData(response.Data) };
+            return await DeserializeResponse<Dictionary<string, DeleteInfo>>(deleteResponse);
         }
 
         /// <summary>
@@ -335,31 +345,98 @@ namespace GoFileSharp.Controllers
         /// <param name="token">The token to use with this request</param>
         /// <param name="contentId">The Id of the content to update</param>
         /// <param name="option">The option to set</param>
-        /// <returns></returns>
-        public async Task<bool> SetOption(string token, string contentId, IContentOption option)
+        /// <returns>Returns the response from GoFile</returns>
+        /// <remarks>The response has an empty data object</remarks>
+        public async Task<GoFileResponse<object>> UpdateContent(string token, string contentId, IContentOption option)
         {
-            var setOptionRequset = new HttpRequestMessage(HttpMethod.Put, Routes.SetOption());
-
-            var requestDictionary = new Dictionary<string, string>
-            {
-                { "token", token },
-                { "contentId", contentId },
-                { "option", option.OptionName },
-                { "value", option.Value }
-            };
-
-            setOptionRequset.Content = new FormUrlEncodedContent(requestDictionary);
+            var setOptionRequset = GoFileRequest.UpdateContent(token, contentId, option.OptionName, option.Value);
 
             var setOptionResponse = await _client.SendAsync(setOptionRequset);
 
             if(setOptionResponse == null || setOptionResponse.Content == null)
             {
-                return false;
+                return GetFailedResponseStatus<object>(setOptionResponse);
             }
 
-            var goFileResponse = await DeserializeResponse<object>(setOptionResponse);
+            return await DeserializeResponse<object>(setOptionResponse);
+        }
 
-            return goFileResponse.IsOK;
+        /// <summary>
+        /// Add a direct link to content
+        /// </summary>
+        /// <param name="token">The token to use with this request</param>
+        /// <param name="contentId">The id of the content to add the link to</param>
+        /// <param name="optionsBuilder">The link options builder to use for link options</param>
+        /// <returns>The response from GoFile with the direct link info</returns>
+        public async Task<GoFileResponse<DirectLink>> AddDirectLink(string token, string contentId,
+            DirectLinkOptionsBuilder optionsBuilder)
+            => await AddDirectLink(token, contentId, optionsBuilder.Build());
+        
+        /// <summary>
+        /// Add a direct link to content
+        /// </summary>
+        /// <param name="token">The token to use with this request</param>
+        /// <param name="contentId">The id of the content to add the link to</param>
+        /// <param name="options">The link options to set on the new link</param>
+        /// <returns>The response from GoFile with the direct link info</returns>
+        public async Task<GoFileResponse<DirectLink>> AddDirectLink(string token, string contentId, DirectLinkOptions? options = null)
+        {
+            var addLinkRequest = GoFileRequest.CreateDirectLink(token, contentId, options?.ExpireTime?.ToUnixTimeSeconds(),
+                options?.SourceIpsAllowed, options?.DomainsAllowed, options?.Auth);
+
+            var addLinkResponse = await _client.SendAsync(addLinkRequest);
+
+            if (addLinkResponse == null || addLinkResponse.Content == null)
+            {
+                return GetFailedResponseStatus<DirectLink>(addLinkResponse);
+            }
+
+            return await DeserializeResponse<DirectLink>(addLinkResponse);
+        }
+
+        /// <summary>
+        /// Update a direct link to content
+        /// </summary>
+        /// <param name="token">The token to use with this request</param>
+        /// <param name="contentId">The id of the content to update the link to</param>
+        /// <param name="directLinkId">The direct link id to update</param>
+        /// <param name="options">The options to update on the link</param>
+        /// <returns>The response from GoFile with the updated direct link info</returns>
+        public async Task<GoFileResponse<DirectLink>> UpdateDirectLink(string token, string contentId, string directLinkId, DirectLinkOptions options)
+        {
+            var updateLinkRequest = GoFileRequest.UpdateDirectLink(token, contentId, directLinkId, options.ExpireTime?.ToUnixTimeSeconds(), 
+                options.SourceIpsAllowed, options.DomainsAllowed, options.Auth);
+
+            var updateLinkResponse = await _client.SendAsync(updateLinkRequest);
+
+            if (updateLinkResponse == null || updateLinkResponse.Content == null)
+            {
+                return GetFailedResponseStatus<DirectLink>(updateLinkResponse);
+            }
+
+            return await DeserializeResponse<DirectLink>(updateLinkResponse);
+        }
+
+        /// <summary>
+        /// Remove a direct link from content
+        /// </summary>
+        /// <param name="token">The token to use with this request</param>
+        /// <param name="contentId">The id of the content to remove the link to</param>
+        /// <param name="directLinkId">The direct link id to remove</param>
+        /// <returns>The response from GoFile on if the deletion was successful</returns>
+        /// <remarks>The response has an empty data object on it</remarks>
+        public async Task<GoFileResponse<object>> RemoveDirectLink(string token, string contentId, string directLinkId)
+        {
+            var deleteLinkRequest = GoFileRequest.DeleteDirectLink(token, contentId, directLinkId);
+
+            var deleteLinkResponse = await _client.SendAsync(deleteLinkRequest);
+
+            if (deleteLinkResponse == null || deleteLinkResponse.Content == null)
+            {
+                return GetFailedResponseStatus<object>(deleteLinkResponse);
+            }
+
+            return await DeserializeResponse<object>(deleteLinkResponse);
         }
     }
 }

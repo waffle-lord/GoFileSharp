@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using GoFileSharp.Interfaces;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -25,16 +26,16 @@ namespace GoFileSharp.Model.GoFileData
         public string Md5 { get; set; }
 
         public string MimeType { get; set; }
-
-        [JsonProperty("serverchoosen")] //typo in API
-        public string ServerChosen { get; set; }
         
-        /// <summary>
-        /// This property has no meaning at this time, but it exists on the API
-        /// </summary>
-        /// <remarks>You probably want to use <see cref="DirectLink"/> instead</remarks>
-        public string[] DirectLinks { get; set; }
-        public string DirectLink { get; set; }
+        public string ServerSelected { get; set; }
+
+        [JsonProperty("DirectLinks")]
+        private Dictionary<string, DirectLink> DirectLinksDictionary { get; set; } =
+            new Dictionary<string, DirectLink>();
+
+        [JsonIgnore]
+        public List<DirectLink> DirectLinks = new List<DirectLink>();
+        
 
         public string Link { get; set; }
 
@@ -47,10 +48,10 @@ namespace GoFileSharp.Model.GoFileData
             Type = file.Type;
             Link = file.Link;
             MimeType = file.MimeType;
-            DirectLink = file.DirectLink;
+            DirectLinksDictionary = file.DirectLinksDictionary;
             DirectLinks = file.DirectLinks;
             CreateTime = file.CreateTime;
-            ServerChosen = file.ServerChosen;
+            ServerSelected = file.ServerSelected;
             DownloadCount = file.DownloadCount;
             ParentFolderId = file.ParentFolderId;
         }
@@ -64,12 +65,26 @@ namespace GoFileSharp.Model.GoFileData
             Update(file);
         }
 
-        public static bool TryParse(JObject jObject, out FileData fileData)
+        public static bool TryParse(JObject jObject, string parentId, out FileData fileData)
         {
             try
             {
                 fileData = jObject.ToObject<FileData>();
 
+                if (fileData != null)
+                {
+                    fileData.ParentFolderId = parentId;
+                    
+                    // direct links in a dictionary response don't have an id property
+                    // like the response for creating a link does.
+                    foreach (var linkInfo in fileData.DirectLinksDictionary)
+                    {
+                        var link = linkInfo.Value;
+                        link.Id = linkInfo.Key;
+                        fileData.DirectLinks.Add(link);
+                    }
+                }
+                
                 return fileData != null && fileData.Type == "file";
             }
             catch (Exception)
