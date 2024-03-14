@@ -4,6 +4,12 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <Nullable>enable</Nullable>
     <LangVersion>8</LangVersion>
+    <Title>GoFileSharp</Title>
+    <Authors>waffle.lord</Authors>
+    <Description>A .NET library for the GoFile.io API written in C#</Description>
+    <RepositoryUrl>https://github.com/waffle-lord/GoFileSharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>gofilesharp gofile</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
