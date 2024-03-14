@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using GoFileSharp.Extensions;
 using GoFileSharp.Interfaces;
+using GoFileSharp.Model;
 using GoFileSharp.Model.GoFileData.Wrappers;
 using Newtonsoft.Json.Linq;
 
@@ -160,7 +161,7 @@ namespace GoFileSharp.Controllers
         /// <param name="token">The token to use with this request</param>
         /// <param name="progress">A progress object to report progress updates to</param>
         /// <returns>The response from GoFile including the uploaded file info</returns>
-        public async Task<GoFileResponse<UploadInfo>> UploadFileAsync(System.IO.FileInfo file, string token = null, IProgress<double> progress = null, string folderId = null)
+        public async Task<GoFileResponse<UploadInfo>> UploadFileAsync(FileInfo file, ServerZone zone, string token = null, IProgress<double> progress = null, string folderId = null)
         {
             file.Refresh();
 
@@ -168,9 +169,8 @@ namespace GoFileSharp.Controllers
             {
                 new GoFileResponse<UploadInfo>() { Status = $"File does not exist: {file.FullName}" };
             }
-
-            // todo: add/use preferred zone
-            var serverResponse = await GetServersAsync();
+            
+            var serverResponse = await GetServersAsync(zone.GetDescription());
 
             if (!serverResponse.IsOK || serverResponse.Data == null)
             {
@@ -283,7 +283,7 @@ namespace GoFileSharp.Controllers
         /// <param name="parentFolderId">The parent folder Id to create the new folder in</param>
         /// <param name="folderName">The name of the new folder</param>
         /// <returns>The GoFile response with the created folder</returns>
-        public async Task<GoFileResponse<GoFileFolder>> CreateFolder(string token, string parentFolderId, string? folderName = null)
+        public async Task<GoFileResponse<FolderData>> CreateFolder(string token, string parentFolderId, string? folderName = null)
         {
             var createFolderRequest = GoFileRequest.CreateFolder(token, parentFolderId, folderName);
 
@@ -291,18 +291,10 @@ namespace GoFileSharp.Controllers
 
             if(createFolderRequest == null || createFolderRequest.Content == null)
             {
-                return GetFailedResponseStatus<GoFileFolder>(createFolderResponse);
+                return GetFailedResponseStatus<FolderData>(createFolderResponse);
             }
 
-            var folder =  await DeserializeResponse<FolderData>(createFolderResponse);
-
-            if (folder.IsOK && folder.Data != null)
-            {
-                return new GoFileResponse<GoFileFolder>()
-                    { Status = folder.Status, Data = new GoFileFolder(folder.Data, this) };
-            }
-
-            return new GoFileResponse<GoFileFolder>() { Status = "failed to get gofile folder" };
+            return await DeserializeResponse<FolderData>(createFolderResponse);
         }
 
         /// <summary>

@@ -14,16 +14,18 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
     /// </summary>
     public class GoFileFolder : FolderData
     {
+        private readonly GoFileOptions _options;
         private GoFileController _api;
 
-        public GoFileFolder(FolderData content, GoFileController controller) : base(content)
+        public GoFileFolder(FolderData content, GoFileOptions options, GoFileController controller) : base(content)
         {
+            _options = options;
             _api = controller;
         }
 
         private async Task<bool> SetOptionAndRefresh(IContentOption option)
         {
-            var status = await _api.UpdateContent(GoFile.ApiToken, Id, option);
+            var status = await _api.UpdateContent(_options.ApiToken, Id, option);
 
             if (status.IsOK) 
                 await RefreshAsync();
@@ -37,14 +39,18 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// <returns></returns>
         public async Task<bool> RefreshAsync()
         {
-            var thisFolder = await GoFile.GetFolderAsync(Id, true);
+            var thisFolder = await _api.GetContentAsync(Id, _options.ApiToken, true);
 
-            if(thisFolder == null) 
+            if(!thisFolder.IsOK || thisFolder.Data == null) 
                 return false;
 
-            base.Update(thisFolder);
+            if (thisFolder.Data is FolderData folder)
+            {
+                base.Update(folder);
+                return true;
+            }
 
-            return true;
+            return false;
         }
 
         /// <summary>
@@ -54,14 +60,14 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// <returns>Returns the newly created folder as a <see cref="GoFileFolder"/> object or null</returns>
         public async Task<GoFileFolder?> CreateFolderAsync(string folderName)
         {
-            var createFolderResponse = await _api.CreateFolder(GoFile.ApiToken, Id, folderName);
+            var createFolderResponse = await _api.CreateFolder(_options.ApiToken, Id, folderName);
 
             if(!createFolderResponse.IsOK || createFolderResponse.Data == null)
             {
                 return null;
             }
 
-            return new GoFileFolder(createFolderResponse.Data, _api);
+            return new GoFileFolder(createFolderResponse.Data, _options, _api);
         }
 
         /// <summary>
@@ -75,7 +81,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
 
             if(fileContent is FileData file)
             {
-                return new GoFileFile(file, _api);
+                return new GoFileFile(file, _options, _api);
             }
 
             return null;
@@ -84,19 +90,19 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// <summary>
         /// Find a folder by name
         /// </summary>
-        /// <param name="Name">The name of the folder</param>
+        /// <param name="name">The name of the folder</param>
         /// <returns>Returns the folder as a <see cref="GoFileFolder"/> object or null</returns>
-        public async Task<GoFileFolder?> FindFolderAsync(string Name)
+        public async Task<GoFileFolder?> FindFolderAsync(string name)
         {
-            var folderContent = Children.SingleOrDefault(x => x.Name == Name);
-
+            var folderContent = Children.SingleOrDefault(x => x.Name == name);
+            
             if(folderContent is FolderData folderData)
             {
-                var folder = await GoFile.GetFolderAsync(folderData.Id, true);
+                var folderResponse = await _api.GetContentAsync(folderData.Id, _options.ApiToken, true);
 
-                if(folder != null)
+                if(folderResponse.IsOK && folderResponse.Data != null && folderResponse.Data is FolderData folder)
                 {
-                    return new GoFileFolder(folder, _api);
+                    return new GoFileFolder(folder, _options, _api);
                 }
             }
 
@@ -111,7 +117,14 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// <returns>Returns the uplaoded file as a <see cref="GoFileFile"/> object</returns>
         public async Task<GoFileFile?> UploadIntoAsync(FileInfo file, IProgress<double> progress = null)
         {
-            return await GoFile.UploadFileAsync(file, progress, Id);
+            var response =  await _api.UploadFileAsync(file, _options.PreferredZone, _options.ApiToken, progress, Id);
+            
+            if(!response.IsOK || response.Data == null)
+            {
+                return null;
+            }
+
+            return await GoFileHelper.TryGetUplaodedFile(response.Data, _options, _api);
         }
 
         /// <summary>
@@ -121,7 +134,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// <exception cref="NotImplementedException"></exception>
         public async Task<Dictionary<string, DeleteInfo>> DeleteAsync()
         {
-            var response = await _api.DeleteContent(GoFile.ApiToken, new[] { Id });
+            var response = await _api.DeleteContent(_options.ApiToken, new[] { Id });
 
             return response.Data ?? new Dictionary<string, DeleteInfo>();
         }
@@ -145,7 +158,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         {
             var contentIds = content.Select(x => x.Id).ToArray();
 
-            var copyResponse = await _api.CopyContent(GoFile.ApiToken, contentIds, Id);
+            var copyResponse = await _api.CopyContent(_options.ApiToken, contentIds, Id);
 
             return copyResponse.IsOK;
         }
@@ -208,7 +221,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         
         private async Task<DirectLink?> AddDirectLink(DirectLinkOptions? options = null)
         {
-            var response = await _api.AddDirectLink(GoFile.ApiToken, Id, options);
+            var response = await _api.AddDirectLink(_options.ApiToken, Id, options);
 
             if (response.IsOK) 
                 await RefreshAsync();
@@ -227,7 +240,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         
         private async Task<DirectLink?> UpdateDirectLink(string directLinkId, DirectLinkOptions options)
         {
-            var response = await _api.UpdateDirectLink(GoFile.ApiToken, Id, directLinkId, options);
+            var response = await _api.UpdateDirectLink(_options.ApiToken, Id, directLinkId, options);
 
             if (response.IsOK)
                 await RefreshAsync();
@@ -245,7 +258,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         
         private async Task<bool> RemoveDirectLink(string directLinkId)
         {
-            var response = await _api.RemoveDirectLink(GoFile.ApiToken, Id, directLinkId);
+            var response = await _api.RemoveDirectLink(_options.ApiToken, Id, directLinkId);
 
             if (response.IsOK)
                 await RefreshAsync();
