@@ -1,6 +1,8 @@
 using System.Diagnostics;
+using System.Net;
 using System.Text;
 using GoFileSharp;
+using GoFileSharp.Model.GoFileData;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -349,7 +351,9 @@ public class GoFileTests
         var link = await testFile.AddDirectLink();
         
         Assert.IsTrue(await testFile.SetName(newName));
+        
         Assert.IsTrue(testFile.Name == newName);
+        
         Assert.IsNotNull(link);
         Assert.IsNotNull(link.Id);
         Assert.IsTrue(testFile.DirectLinks.Count > 0);
@@ -362,6 +366,7 @@ public class GoFileTests
         var desc = "This is a description";
         var tags = new List<string>() { "testing", "stuff" };
         var pass = "test123";
+        var newName = "my new name folder";
         DateTimeOffset expiry = DateTime.Now.AddDays(5);
         
         await DelayTwoSeconds();
@@ -369,12 +374,16 @@ public class GoFileTests
         var testFolder = await GoFile.GetFolderAsync(_testFolderId);
         var folderOptionsFolder = await testFolder.CreateFolderAsync("folderOptions");
 
+        var link = await folderOptionsFolder.AddDirectLink();
+
+        Assert.IsTrue(await folderOptionsFolder.SetName(newName));
         Assert.IsTrue(await folderOptionsFolder.SetDescription(desc));
         Assert.IsTrue(await folderOptionsFolder.SetTags(tags));
         Assert.IsTrue(await folderOptionsFolder.SetPublic(true));
         Assert.IsTrue(await folderOptionsFolder.SetExpire(expiry));
         Assert.IsTrue(await folderOptionsFolder.SetPassword(pass));
         
+        Assert.IsTrue(folderOptionsFolder.Name == newName);
         Assert.IsNotNull(folderOptionsFolder.Description);
         Assert.IsNotNull(folderOptionsFolder.Expire);
         Assert.IsNotNull(folderOptionsFolder.Tags);
@@ -383,6 +392,11 @@ public class GoFileTests
         Assert.IsTrue(folderOptionsFolder.Tags == string.Join(",", tags));
         Assert.IsTrue(folderOptionsFolder.Description == desc);
         Assert.IsTrue(folderOptionsFolder.Expire == expiry.ToUnixTimeSeconds());
+        
+        Assert.IsNotNull(link);
+        Assert.IsNotNull(link.Id);
+        Assert.IsTrue(folderOptionsFolder.DirectLinks.Count > 0);
+        Assert.IsTrue(folderOptionsFolder.DirectLinks.First().Id == link.Id);
     }
     
     [TestMethod]
@@ -421,5 +435,50 @@ public class GoFileTests
         }
         await delFileFolder.RefreshAsync();
         Assert.IsTrue(delFileFolder.Children.Count == 0);
+    }
+
+    [TestMethod]
+    public async Task DirectLinkOptions()
+    {
+        await DelayTwoSeconds();
+
+        var testFolder = await GoFile.GetFolderAsync(_testFolderId);
+        var linkOptionsFolder = await testFolder.CreateFolderAsync("linkOptions");
+        var linkOptionsFile = await linkOptionsFolder.UploadIntoAsync(_testFile);
+
+        DateTimeOffset expireTime = DateTime.Now.AddDays(5);
+        string[] auths = ["test:blah", "another:thing"];
+        string[] domains = ["google.com", "waffle-lord.com"];
+        string[] sourceIps = ["192.168.1.1", "192.168.1.2"];
+
+        var optionsBuilder = new DirectLinkOptionsBuilder()
+            .WithExpireTime(expireTime)
+            .AddAuth("test", "blah")
+            .AddAuth("another", "thing")
+            .AddAllowedDomain("google.com")
+            .AddAllowedDomain("waffle-lord.com")
+            .AddAllowedSourceIp(IPAddress.Parse("192.168.1.1"))
+            .AddAllowedSourceIp(IPAddress.Parse("192.168.1.2"));
+
+
+        var link = await linkOptionsFile.AddDirectLink(optionsBuilder);
+        
+        Assert.IsNotNull(link);
+        Assert.IsTrue(link.ExpireTime == expireTime.ToUnixTimeSeconds());
+
+        foreach (var ip in sourceIps)
+        {
+            Assert.IsTrue(link.SourceIpsAllowed.Contains(ip));
+        }
+        
+        foreach (var domain in domains)
+        {
+            Assert.IsTrue(link.DomainsAllowed.Contains(domain));
+        }
+        
+        foreach (var login in auths)
+        {
+            Assert.IsTrue(link.Auth.Contains(login));
+        }
     }
 }

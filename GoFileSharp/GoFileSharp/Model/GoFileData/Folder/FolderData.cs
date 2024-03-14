@@ -43,7 +43,12 @@ namespace GoFileSharp.Model.GoFileData
         
         public ulong TotalSize { get; set; }
         
-        public Dictionary<string, DirectLink> DirectLinks { get; set; }
+        [JsonProperty("DirectLinks")]
+        private Dictionary<string, DirectLink> DirectLinksDictionary { get; set; } =
+            new Dictionary<string, DirectLink>();
+
+        [JsonIgnore]
+        public List<DirectLink> DirectLinks = new List<DirectLink>();
 
         public string Description { get; set; }
 
@@ -70,6 +75,7 @@ namespace GoFileSharp.Model.GoFileData
             Name = folder.Name;
             ParentFolderId = folder.ParentFolderId;
             DirectLinks = folder.DirectLinks;
+            DirectLinksDictionary = folder.DirectLinksDictionary;
             CreateTime = folder.CreateTime;
             Description = folder.Description;
             HasPassword = folder.HasPassword;
@@ -121,6 +127,15 @@ namespace GoFileSharp.Model.GoFileData
                     {
                         folderData.Children.Add(child);
                     }
+                }
+                
+                // direct links in a dictionary response don't have an id property
+                // like the response for creating a link does.
+                foreach (var linkInfo in folderData.DirectLinksDictionary)
+                {
+                    var link = linkInfo.Value;
+                    link.Id = linkInfo.Key;
+                    folderData.DirectLinks.Add(link);
                 }
 
                 return true;
