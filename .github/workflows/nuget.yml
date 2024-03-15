@@ -21,6 +21,8 @@ jobs:
         dotnet-version: 8.0.x
     - name: Pack
       run: dotnet pack ./GoFileSharp/GoFileSharp/GoFileSharp.csproj --configuration release --output ./ -p:OutputFileNamesWithoutVersion=true 
-    - name: Publish 
-      run: dotnet nuget push ./GoFileSharp.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json  
+    - name: Publish
+      env:
+        NUGET_TOKEN: ${{ secrets.NUGET_API_KEY }}
+      run: dotnet nuget push ./GoFileSharp.nupkg --api-key "$NUGET_TOKEN" --source "https://api.nuget.org/v3/index.json"  
 
