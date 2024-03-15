@@ -15,11 +15,9 @@ A .NET library for the GoFile.io API written in C#
 ### Setting up
 You can create a new `GoFile` instance to access the API, optionally passing in a GoFileOptions object
 
-Options Include: 
-| Name          | Description                                                       |
-|---------------|-------------------------------------------------------------------|
-| ApiToken      | The token to use with all requests, defaults to `null`            |
-| PreferredZone | The preferred zone to use when uploading files, defaults to `Any` |
+Options Include:
+- `ApiToken`: The token to use with all requests, defaults to `null`
+- `PreferredZone`: The preferred zone to use when uploading files, defaults to `Any`
 
 > [!WARNING]
 > Not providing an api token will mean limited api access
