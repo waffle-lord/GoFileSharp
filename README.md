@@ -1,4 +1,7 @@
-[![Run Tests](https://github.com/waffle-lord/GoFileSharp/actions/workflows/dotnet.yml/badge.svg)](https://github.com/waffle-lord/GoFileSharp/actions/workflows/dotnet.yml)
+[![Run Tests](https://github.com/waffle-lord/GoFileSharp/actions/workflows/dotnet.yml/badge.svg)](https://github.com/waffle-lord/GoFileSharp/actions/workflows/dotnet.yml) <a href="https://www.nuget.org/packages/GoFileSharp"><img alt="NuGet Version" src="https://img.shields.io/nuget/v/GoFileSharp?label=GoFileSharp">
+</a>
+
+
 
 # GoFileSharp
 
