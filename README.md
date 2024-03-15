@@ -1,11 +1,12 @@
-[![Run Tests](https://github.com/waffle-lord/GoFileSharp/actions/workflows/dotnet.yml/badge.svg)](https://github.com/waffle-lord/GoFileSharp/actions/workflows/dotnet.yml) [![Publish Nuget](https://github.com/waffle-lord/GoFileSharp/actions/workflows/nuget.yml/badge.svg?branch=main)](https://github.com/waffle-lord/GoFileSharp/actions/workflows/nuget.yml) <a href="https://www.nuget.org/packages/GoFileSharp" target="_blank"><img alt="NuGet Version" src="https://img.shields.io/nuget/v/GoFileSharp?label=GoFileSharp Nuget">
-</a>
+[![Run Tests](https://github.com/waffle-lord/GoFileSharp/actions/workflows/dotnet.yml/badge.svg)](https://github.com/waffle-lord/GoFileSharp/actions/workflows/dotnet.yml) [![Publish Nuget](https://github.com/waffle-lord/GoFileSharp/actions/workflows/nuget.yml/badge.svg?branch=main)](https://github.com/waffle-lord/GoFileSharp/actions/workflows/nuget.yml) <img alt="NuGet Version" src="https://img.shields.io/nuget/v/GoFileSharp?label=GoFileSharp Nuget">
 
 
 
 # GoFileSharp
 
 A .NET library for the GoFile.io API written in C#
+
+[Available on Nuget](https://www.nuget.org/packages/GoFileSharp)
 
 # Requirments
 - NewtonSoft.Json
