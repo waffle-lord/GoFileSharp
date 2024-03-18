@@ -114,7 +114,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// </summary>
         /// <param name="newName">The new name of the file</param>
         /// <returns>Returns true if the name was updated, otherwise false</returns>
-        public async Task<bool> SetName(string newName) =>
+        public async Task<bool> SetNameAsync(string newName) =>
             await SetOptionAndRefresh(FileContentOption.Name(newName));
 
         /// <summary>
@@ -122,10 +122,10 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// </summary>
         /// <param name="optionsBuilder">The options builder to use for link options</param>
         /// <returns>A <see cref="DirectLink"/> or null if the link fails to be added</returns>
-        public async Task<DirectLink?> AddDirectLink(DirectLinkOptionsBuilder? optionsBuilder = null)
-            => await AddDirectLink(optionsBuilder?.Build());
+        public async Task<DirectLink?> AddDirectLinkAsync(DirectLinkOptionsBuilder? optionsBuilder = null)
+            => await AddDirectLinkAsync(optionsBuilder?.Build());
         
-        private async Task<DirectLink?> AddDirectLink(DirectLinkOptions? options = null)
+        private async Task<DirectLink?> AddDirectLinkAsync(DirectLinkOptions? options = null)
         {
             var response = await _api.AddDirectLink(_options.ApiToken, Id, options);
 
@@ -141,10 +141,10 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// <param name="directLink">The direct link to update</param>
         /// <param name="optionsBuilder">The options builder to use to update the link</param>
         /// <returns>A <see cref="DirectLink"/> or null if the link fails to be updated</returns>
-        public async Task<DirectLink?> UpdateDirectLink(DirectLink directLink, DirectLinkOptionsBuilder optionsBuilder)
-            => await UpdateDirectLink(directLink.Id, optionsBuilder.Build());
+        public async Task<DirectLink?> UpdateDirectLinkAsync(DirectLink directLink, DirectLinkOptionsBuilder optionsBuilder)
+            => await UpdateDirectLinkAsync(directLink.Id, optionsBuilder.Build());
         
-        private async Task<DirectLink?> UpdateDirectLink(string directLinkId, DirectLinkOptions options)
+        private async Task<DirectLink?> UpdateDirectLinkAsync(string directLinkId, DirectLinkOptions options)
         {
             var response = await _api.UpdateDirectLink(_options.ApiToken, Id, directLinkId, options);
 
@@ -159,10 +159,10 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// </summary>
         /// <param name="directLink">The direct link to remove</param>
         /// <returns>Returns true if the link was removed, otherwise false</returns>
-        public async Task<bool> RemoveDirectLink(DirectLink directLink) 
-            => await RemoveDirectLink(directLink.Id);
+        public async Task<bool> RemoveDirectLinkAsync(DirectLink directLink) 
+            => await RemoveDirectLinkAsync(directLink.Id);
         
-        private async Task<bool> RemoveDirectLink(string directLinkId)
+        private async Task<bool> RemoveDirectLinkAsync(string directLinkId)
         {
             var response = await _api.RemoveDirectLink(_options.ApiToken, Id, directLinkId);
 

@@ -71,30 +71,30 @@ var optionsBuuilder = new DirectLinkOptionsBuilder()
     .AddAuth("user", "password");
 
 // you can also add the options when creating the initial link here
-var directLink = await uploadedFile.AddDirectLink();
+var directLink = await uploadedFile.AddDirectLinkAsync();
 
-var updatedLink = await uploadedFile.UpdateDirectLink(directLink, optionsBuuilder);
+var updatedLink = await uploadedFile.UpdateDirectLinkAsync(directLink, optionsBuuilder);
 ```
 
 ### Removing a direct link
 ```cs
 // returns true if the link was removed, otherwise false
-var removed = await uploadedFile.RemoveDirectLink(updatedLink);
+var removed = await uploadedFile.RemoveDirectLinkAsync(updatedLink);
 ```
 
 ### Setting file/folder options
 Setting an option will always return a bool value. True is success, otherwise false
 ```cs
 // files can only have their name updated
-var ok = await uploadedFile.SetName("my new name.txt");
+var ok = await uploadedFile.SetNameAsync("my new name.txt");
 
 // folders have quite a few more options
-ok = await newFolder.SetName("some name here");
-ok = await newFolder.SetDescription("my cool folder description");
-ok = await newFolder.SetExpire(DateTime.Now.AddDays(5));
-ok = await newFolder.SetPublic(true);
-ok = await newFolder.SetPassword("password");
-ok = await newFolder.SetTags(new[] {"tag1", "tag2", "tag3"}.ToList());
+ok = await newFolder.SetNameAsync("some name here");
+ok = await newFolder.SetDescriptionAsync("my cool folder description");
+ok = await newFolder.SetExpireAsync(DateTime.Now.AddDays(5));
+ok = await newFolder.SetPublicAsync(true);
+ok = await newFolder.SetPasswordAsync("password");
+ok = await newFolder.SetTagsAsync(new[] {"tag1", "tag2", "tag3"}.ToList());
 ```
 
 ### Downloading a file
