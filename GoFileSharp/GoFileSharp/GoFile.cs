@@ -30,11 +30,13 @@ namespace GoFileSharp
         /// <summary>
         /// Get <see cref="IContent"/> from an ID
         /// </summary>
-        /// <param name="contentId"></param>
+        /// <param name="contentId">The content ID to try and get</param>
+        /// <param name="noCache">Wheather or not to use GoFile cache with this request</param>
+        /// <param name="passwordHash">The SHA256 hash of the password to use for password protected content</param>
         /// <returns>Returns content of the id</returns>
-        private async Task<IContent?> GetContentAsync(string contentId, bool noCache = false)
+        private async Task<IContent?> GetContentAsync(string contentId, bool noCache = false, string? passwordHash = null)
         {
-            var response = await _api.GetContentAsync(contentId, _options.ApiToken, noCache);
+            var response = await _api.GetContentAsync(contentId, _options.ApiToken, noCache, passwordHash);
 
             if(response is { IsOK: true, Data: { } data })
             {
@@ -51,10 +53,12 @@ namespace GoFileSharp
         /// Get a folder object from an ID
         /// </summary>
         /// <param name="contentId"></param>
+        /// <param name="noCache">Wheather or not to use GoFile cache with this request</param>
+        /// <param name="passwordHash">The SHA256 hash of the password to use for password protected content</param>
         /// <returns></returns>
-        public async Task<GoFileFolder?> GetFolderAsync(string contentId, bool noCache = false)
+        public async Task<GoFileFolder?> GetFolderAsync(string contentId, bool noCache = false, string? passwordHash = null)
         {
-            var folder = await GetContentAsync(contentId, noCache);
+            var folder = await GetContentAsync(contentId, noCache, passwordHash);
 
             if(folder is GoFileFolder gofileFolder)
             {
@@ -85,7 +89,8 @@ namespace GoFileSharp
         /// Upload a file to Gofile
         /// </summary>
         /// <param name="file">The file to upload</param>
-        /// <param name="progress"></param>
+        /// <param name="progress">The progress object to use with the upload for progress updates</param>
+        /// <param name="folderId">The id of the folder to upload the file into</param>
         /// <returns>Returns the uploaded file</returns>
         /// <remarks>If the preferred zone option was set, the upload will use a server in that zone</remarks>
         public async Task<GoFileFile?> UploadFileAsync(FileInfo file, IProgress<double> progress = null, string folderId = null)

@@ -363,9 +363,9 @@ public class GoFileTests
         var fileOptionsFolder = await testFolder.CreateFolderAsync("fileOptions");
         var testFile = await fileOptionsFolder.UploadIntoAsync(_testFile);
 
-        var link = await testFile.AddDirectLink();
+        var link = await testFile.AddDirectLinkAsync();
         
-        Assert.IsTrue(await testFile.SetName(newName));
+        Assert.IsTrue(await testFile.SetNameAsync(newName));
         
         Assert.IsTrue(testFile.Name == newName);
         
@@ -389,14 +389,14 @@ public class GoFileTests
         var testFolder = await _goFile.GetFolderAsync(_testFolderId);
         var folderOptionsFolder = await testFolder.CreateFolderAsync("folderOptions");
 
-        var link = await folderOptionsFolder.AddDirectLink();
+        var link = await folderOptionsFolder.AddDirectLinkAsync();
 
-        Assert.IsTrue(await folderOptionsFolder.SetName(newName));
-        Assert.IsTrue(await folderOptionsFolder.SetDescription(desc));
-        Assert.IsTrue(await folderOptionsFolder.SetTags(tags));
-        Assert.IsTrue(await folderOptionsFolder.SetPublic(true));
-        Assert.IsTrue(await folderOptionsFolder.SetExpire(expiry));
-        Assert.IsTrue(await folderOptionsFolder.SetPassword(pass));
+        Assert.IsTrue(await folderOptionsFolder.SetNameAsync(newName));
+        Assert.IsTrue(await folderOptionsFolder.SetDescriptionAsync(desc));
+        Assert.IsTrue(await folderOptionsFolder.SetTagsAsync(tags));
+        Assert.IsTrue(await folderOptionsFolder.SetPublicAsync(true));
+        Assert.IsTrue(await folderOptionsFolder.SetExpireAsync(expiry));
+        Assert.IsTrue(await folderOptionsFolder.SetPasswordAsync(pass));
         
         Assert.IsTrue(folderOptionsFolder.Name == newName);
         Assert.IsNotNull(folderOptionsFolder.Description);
@@ -476,7 +476,7 @@ public class GoFileTests
             .AddAllowedSourceIp(IPAddress.Parse("192.168.1.2"));
 
 
-        var link = await linkOptionsFile.AddDirectLink(optionsBuilder);
+        var link = await linkOptionsFile.AddDirectLinkAsync(optionsBuilder);
         
         Assert.IsNotNull(link);
         Assert.IsTrue(link.ExpireTime == expireTime.ToUnixTimeSeconds());

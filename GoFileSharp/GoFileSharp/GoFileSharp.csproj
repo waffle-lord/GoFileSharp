@@ -10,9 +10,9 @@
     <RepositoryUrl>https://github.com/waffle-lord/GoFileSharp</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>gofilesharp gofile</PackageTags>
-    <AssemblyVersion>1.0.3</AssemblyVersion>
-    <FileVersion>1.0.3</FileVersion>
-    <Version>1.0.3</Version>
+    <AssemblyVersion>1.0.4</AssemblyVersion>
+    <FileVersion>1.0.4</FileVersion>
+    <Version>1.0.4</Version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>gofilesharp_icon.png</PackageIcon>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
