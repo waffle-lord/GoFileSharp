@@ -36,10 +36,12 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// <summary>
         /// Refresh this folders information
         /// </summary>
+        /// <param name="passwordHash">The SHA256 hash of the password set on this folder</param>
         /// <returns></returns>
-        public async Task<bool> RefreshAsync()
+        /// <remarks>Automatic refreshes, like when using a Set method (SetNameAsync for example) will not refresh if a password is set. You will need to call this manually with the password hash</remarks>
+        public async Task<bool> RefreshAsync(string? passwordHash = null)
         {
-            var thisFolder = await _api.GetContentAsync(Id, _options.ApiToken, true);
+            var thisFolder = await _api.GetContentAsync(Id, _options.ApiToken, true, passwordHash);
 
             if(!thisFolder.IsOK || thisFolder.Data == null) 
                 return false;
