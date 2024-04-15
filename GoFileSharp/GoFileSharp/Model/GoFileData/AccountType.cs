@@ -2,8 +2,8 @@ namespace GoFileSharp.Model.GoFileData
 {
     public enum AccountType
     {
-        Guest,
-        Standard,
-        Premium
+        Guest = 0,
+        Standard = 1,
+        Premium = 2
     }
 }

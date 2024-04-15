@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using GoFileSharp.Extensions;
 using GoFileSharp.Interfaces;
 using GoFileSharp.Model;
-using GoFileSharp.Model.GoFileData.Wrappers;
 using Newtonsoft.Json.Linq;
 
 namespace GoFileSharp.Controllers
@@ -20,15 +19,44 @@ namespace GoFileSharp.Controllers
     /// </summary>
     public class GoFileController
     {
+        private readonly string? _token;
+        private readonly AccountType _accountType = AccountType.Guest;
         private HttpClient _client = new HttpClient();
 
         /// <summary>
         /// A GoFile API Controller
         /// </summary>
         /// <param name="timeout">The HttpClient timeout. Defaults to 1 hour</param>
-        public GoFileController(TimeSpan? timeout = null)
+        protected GoFileController(string? token = null, TimeSpan? timeout = null)
         {
             _client.Timeout = timeout ?? TimeSpan.FromHours(1);
+            
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return;
+            }
+
+            var accountIdResponse = GetAccountId(token).GetAwaiter().GetResult();
+
+            if (!accountIdResponse.IsOK || accountIdResponse.Data == null)
+            {
+                return;
+            }
+
+            var accountResponse = GetAccountDetails(token, accountIdResponse.Data.Id)
+                .GetAwaiter().GetResult();
+
+            if (!accountResponse.IsOK || accountResponse.Data == null)
+            {
+                return;
+            }
+
+            _accountType = accountResponse.Data.Tier;
+        }
+
+        public static GoFileController Init(string? token = null, TimeSpan? timeout = null)
+        {
+            return new GoFileController(token, timeout);
         }
 
         private async Task<GoFileResponse<T>> DeserializeResponse<T>(HttpResponseMessage response) where T : class
@@ -63,6 +91,7 @@ namespace GoFileSharp.Controllers
         /// Get a server from GoFile
         /// </summary>
         /// <returns>Returns the response from GoFile with the server info or null</returns>
+        /// <remarks>This call does not require a GoFile account to use: Accessible as guest</remarks>
         public async Task<GoFileResponse<ServerInfo>> GetServersAsync(string? zoneId = null)
         {
             var serverRequest = GoFileRequest.GetServers(zoneId);
@@ -81,13 +110,18 @@ namespace GoFileSharp.Controllers
         /// Get the content of a folder from GoFile
         /// </summary>
         /// <param name="contentId">The contentId of the folder to request content info for</param>
-        /// <param name="token">The token to use with this request</param>
         /// <param name="noCache">Whether or not to use GoFile's cache</param>
         /// <param name="passwordHash">The SHA256 password hash to use if the content is password protected</param>
         /// <returns>Returns the response from GoFile with the content info or null</returns>
-        public async Task<GoFileResponse<IContent>> GetContentAsync(string contentId, string token, bool noCache = false, string? passwordHash = null)
+        /// <remarks>This call requires a GoFile Standard account or higher</remarks>
+        public async Task<GoFileResponse<IContent>> GetContentAsync(string contentId, bool noCache = false, string? passwordHash = null)
         {
-            var contentRequest = GoFileRequest.GetContents(token, contentId, noCache, passwordHash);
+            if (_accountType < AccountType.Standard || string.IsNullOrWhiteSpace(_token))
+            {
+                return new GoFileResponse<IContent>() { Status = $"A standard account or higher is required for this call. Currently using a '{_accountType}' account"};
+            }
+            
+            var contentRequest = GoFileRequest.GetContents(_token, contentId, noCache, passwordHash);
 
             var contentResponse = await _client.SendAsync(contentRequest);
 
@@ -160,7 +194,9 @@ namespace GoFileSharp.Controllers
         /// <param name="file">The file to upload</param>
         /// <param name="token">The token to use with this request</param>
         /// <param name="progress">A progress object to report progress updates to</param>
+        /// <param name="folderId">The folder ID to upload into</param>
         /// <returns>The response from GoFile including the uploaded file info</returns>
+        /// <remarks>This call does not require a GoFile account to use: Accessible as guest</remarks>
         public async Task<GoFileResponse<UploadInfo>> UploadFileAsync(FileInfo file, ServerZone zone, string token = null, IProgress<double> progress = null, string folderId = null)
         {
             file.Refresh();
@@ -231,9 +267,16 @@ namespace GoFileSharp.Controllers
         /// </summary>
         /// <param name="token">The token to use with this request</param>
         /// <returns>The GoFile response with an account id</returns>
-        public async Task<GoFileResponse<AccountId>> GetAccountId(string token)
+        /// <remarks>This call requires a GoFile Standard account or higher</remarks>
+        public async Task<GoFileResponse<AccountId>> GetAccountId()
         {
-            var idRequest = GoFileRequest.GetAccountId(token);
+            if (_accountType < AccountType.Standard || _token == null)
+            {
+                return new GoFileResponse<AccountId>()
+                    { Status = $"A standard account or higher is required for this call. Currently using a '{_accountType}' account" };
+            }
+            
+            var idRequest = GoFileRequest.GetAccountId(_token);
 
             var response = await _client.SendAsync(idRequest);
             
@@ -250,11 +293,18 @@ namespace GoFileSharp.Controllers
         /// </summary>
         /// <param name="token">The token to use with this request</param>
         /// <returns>The GoFile response with the account details</returns>
-        public async Task<GoFileResponse<AccountDetails>> GetAccountDetails(string token, string? accountId = null)
+        public async Task<GoFileResponse<AccountDetails>> GetAccountDetails(string? accountId = null)
         {
+            // TODO: I don't like this, should make a function to handle this since it's going to be used a lot...
+            if (_accountType < AccountType.Standard || _token == null)
+            {
+                return new GoFileResponse<AccountDetails>()
+                    { Status = $"A standard account or higher is required for this call. Currently using a '{_accountType}' account" };
+            }
+            
             if (accountId == null)
             {
-                var idResponse = await GetAccountId(token);
+                var idResponse = await GetAccountId();
                 
                 accountId = idResponse.Data?.Id;
 
@@ -264,7 +314,7 @@ namespace GoFileSharp.Controllers
                 }
             }
 
-            var accountRequest = GoFileRequest.GetAccountDetails(token, accountId);
+            var accountRequest = GoFileRequest.GetAccountDetails(_token, accountId);
 
             var accountResponse = await _client.SendAsync(accountRequest);
 
