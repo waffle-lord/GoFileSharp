@@ -10,7 +10,7 @@ namespace GoFileSharp.Model.GoFileData
 
         public string Email { get; set; }
 
-        public string Tier { get; set; }
+        public AccountType Tier { get; set; }
 
         public string RootFolder { get; set; }
 

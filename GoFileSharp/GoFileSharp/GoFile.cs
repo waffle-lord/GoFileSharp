@@ -17,14 +17,37 @@ namespace GoFileSharp
     public class GoFile
     {
         private readonly GoFileOptions _options = new GoFileOptions();
+        private readonly AccountType _accountType = AccountType.Guest;
         private readonly GoFileController _api = new GoFileController();
 
         public GoFile(GoFileOptions? options = null)
         {
             if (options == null)
                 return;
-            
+
             _options = options;
+
+            if (string.IsNullOrWhiteSpace(_options.ApiToken))
+            {
+                return;
+            }
+
+            var accountIdResponse = _api.GetAccountId(_options.ApiToken).GetAwaiter().GetResult();
+
+            if (!accountIdResponse.IsOK || accountIdResponse.Data == null)
+            {
+                return;
+            }
+
+            var accountResponse = _api.GetAccountDetails(_options.ApiToken, accountIdResponse.Data.Id)
+                                      .GetAwaiter().GetResult();
+
+            if (!accountResponse.IsOK || accountResponse.Data == null)
+            {
+                return;
+            }
+
+            _accountType = accountResponse.Data.Tier;
         }
 
         /// <summary>
