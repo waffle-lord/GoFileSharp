@@ -14,18 +14,16 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
     /// <remarks>The name is stupid, I know ...</remarks>
     public class GoFileFile : FileData
     {
-        private readonly GoFileOptions _options;
         private readonly GoFileController _api;
 
-        public GoFileFile(FileData content, GoFileOptions options, GoFileController controller) : base(content)
+        public GoFileFile(FileData content, GoFileController controller) : base(content)
         {
-            _options = options;
             _api = controller;
         }
 
         private async Task<bool> SetOptionAndRefresh(IContentOption option)
         {
-            var status = await _api.UpdateContent(_options.ApiToken, Id, option);
+            var status = await _api.UpdateContent(Id, option);
 
             if (status.IsOK) 
                 await RefreshAsync();
@@ -41,7 +39,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// <remarks>Automatic refreshes, like when using a Set method (SetNameAsync for example) will not refresh if a password is set. You will need to call this manually with the password hash</remarks>
         public async Task<bool> RefreshAsync(string? parentFolderPasswordHash = null)
         {
-            var parent = await _api.GetContentAsync(ParentFolderId, _options.ApiToken, true, parentFolderPasswordHash);
+            var parent = await _api.GetContentAsync(ParentFolderId, true, parentFolderPasswordHash);
 
             if (!parent.IsOK || parent.Data == null)
                 return false;
@@ -106,7 +104,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         /// <returns>Returns true if the file was deleted, otherwise false</returns>
         public async Task<Dictionary<string, DeleteInfo>> DeleteAsync()
         {
-            var result = await _api.DeleteContent(_options.ApiToken, new[] { this.Id });
+            var result = await _api.DeleteContent(new[] { this.Id });
 
             return result.Data ?? new Dictionary<string, DeleteInfo>();
         }
@@ -129,7 +127,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         
         private async Task<DirectLink?> AddDirectLinkAsync(DirectLinkOptions? options = null)
         {
-            var response = await _api.AddDirectLink(_options.ApiToken, Id, options);
+            var response = await _api.AddDirectLink(Id, options);
 
             if (response.IsOK) 
                 await RefreshAsync();
@@ -148,7 +146,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         
         private async Task<DirectLink?> UpdateDirectLinkAsync(string directLinkId, DirectLinkOptions options)
         {
-            var response = await _api.UpdateDirectLink(_options.ApiToken, Id, directLinkId, options);
+            var response = await _api.UpdateDirectLink(Id, directLinkId, options);
 
             if (response.IsOK)
                 await RefreshAsync();
@@ -166,7 +164,7 @@ namespace GoFileSharp.Model.GoFileData.Wrappers
         
         private async Task<bool> RemoveDirectLinkAsync(string directLinkId)
         {
-            var response = await _api.RemoveDirectLink(_options.ApiToken, Id, directLinkId);
+            var response = await _api.RemoveDirectLink(Id, directLinkId);
 
             if (response.IsOK)
                 await RefreshAsync();

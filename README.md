@@ -11,6 +11,19 @@ A .NET library for the GoFile.io API written in C#
 # Requirments
 - NewtonSoft.Json
 
+# Allowed Methods by Account Type
+
+### `GoFile` Class
+|      **Method**      | **Guest** | **Standard** | **Premium** |
+|:--------------------:|:---------:|:------------:|:-----------:|
+|   UploadFileAsync    |    ✅     |      ✅      |     ✅      |
+|  GetMyAccountAsync   |    ❌     |      ✅      |     ✅      |
+|    GetFolderAsync    |    ❌     |      ❌      |     ✅      |
+| GetMyRootFolderAsync |    ❌     |      ❌      |     ✅      |
+
+- `GoFileFolder` and `GoFileFile` classes can only be accessed by premium accounts because they require you to be able to get content from the API
+- A complete API access breakdown is available on the [GoFile API Docs](https://gofile.io/api) page
+
 # Examples
 
 ### Setting up
@@ -21,7 +34,8 @@ Options Include:
 - `PreferredZone`: The preferred zone to use when uploading files, defaults to `Any`
 
 > [!WARNING]
-> Not providing an api token will mean limited api access
+> **Not providing a premium api token will severly limit api access.**
+
 ```cs
 using GoFileSharp;
 

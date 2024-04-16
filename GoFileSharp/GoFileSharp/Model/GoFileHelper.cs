@@ -10,7 +10,7 @@ namespace GoFileSharp.Model
 {
     public static class GoFileHelper
     {
-        public static async Task<GoFileFile?> TryGetUplaodedFile(UploadInfo uploadInfo, GoFileOptions options, GoFileController api, string? passwordHash = null)
+        public static async Task<GoFileFile?> TryGetUplaodedFile(UploadInfo uploadInfo, GoFileController api, string? passwordHash = null)
         {
             // NOTE: This is mainly due to GoFile folder data not updating immediately after an upload :(
             // up to 1 min to try and get uploaded file
@@ -21,7 +21,7 @@ namespace GoFileSharp.Model
 
             while (maxTries > 0)
             {
-                var parentFolder = await api.GetContentAsync(uploadInfo.ParentFolderId, options.ApiToken, true, passwordHash);
+                var parentFolder = await api.GetContentAsync(uploadInfo.ParentFolderId, true, passwordHash);
 
                 if (!parentFolder.IsOK || parentFolder.Data == null) 
                     return null;
@@ -44,7 +44,7 @@ namespace GoFileSharp.Model
 
             if (uploadedContent is FileData uploadedFile)
             {
-                return new GoFileFile(uploadedFile, options, api);
+                return new GoFileFile(uploadedFile, api);
             }
 
             return null;
