@@ -26,7 +26,7 @@ namespace GoFileSharp
               _options = options;
             }
             
-            _api = GoFileController.Init(_options.ApiToken);
+            _api = new GoFileController(_options.ApiToken);
         }
 
         /// <summary>
