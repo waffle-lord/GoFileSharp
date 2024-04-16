@@ -20,7 +20,6 @@ namespace GoFileSharp.Controllers
     public class GoFileController
     {
         private readonly string? _token;
-        private readonly AccountType _accountType = AccountType.Guest;
         private HttpClient _client = new HttpClient();
 
         /// <summary>
@@ -28,64 +27,10 @@ namespace GoFileSharp.Controllers
         /// </summary>
         /// <param name="token">The GoFile API token to use with this controller</param>
         /// <param name="timeout">The HttpClient timeout. Defaults to 1 hour</param>
-        protected GoFileController(string? token = null, TimeSpan? timeout = null)
+        public GoFileController(string? token = null, TimeSpan? timeout = null)
         {
-            _client.Timeout = timeout ?? TimeSpan.FromHours(1);
-            
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                return;
-            }
-
             _token = token;
-
-            var accountIdResponse = GetAccountId().GetAwaiter().GetResult();
-
-            if (!accountIdResponse.IsOK || accountIdResponse.Data == null)
-            {
-                return;
-            }
-
-            var accountResponse = GetAccountDetails(accountIdResponse.Data.Id)
-                .GetAwaiter().GetResult();
-
-            if (!accountResponse.IsOK || accountResponse.Data == null)
-            {
-                return;
-            }
-
-            _accountType = accountResponse.Data.Tier;
-        }
-
-        /// <summary>
-        /// Initialize a new GoFile API Controller
-        /// </summary>
-        /// <param name="token">The GoFile API token to use with requests</param>
-        /// <param name="timeout">The timeout to use for the http client</param>
-        /// <returns>A new <see cref="GoFileController"/> that is ready to use</returns>
-        public static GoFileController Init(string? token = null, TimeSpan? timeout = null)
-        {
-            return new GoFileController(token, timeout);
-        }
-        
-        private bool CheckAccountAllowed(AccountType minRequiredAccountType, out string message)
-        {
-            message = "ok";
-            
-            if (minRequiredAccountType == AccountType.Guest)
-            {
-                return true;
-            }
-
-            if (_accountType >= minRequiredAccountType && !string.IsNullOrWhiteSpace(_token))
-            {
-                return true;
-            }
-
-            message =
-                $"A {minRequiredAccountType} account or higher is required for this call. Currently using a '{_accountType}' account";
-
-            return false;
+            _client.Timeout = timeout ?? TimeSpan.FromHours(1);
         }
 
         private async Task<GoFileResponse<T>> DeserializeResponse<T>(HttpResponseMessage response) where T : class
@@ -145,9 +90,9 @@ namespace GoFileSharp.Controllers
         /// <remarks>This call requires a GoFile Premium account or higher</remarks>
         public async Task<GoFileResponse<IContent>> GetContentAsync(string contentId, bool noCache = false, string? passwordHash = null)
         {
-            if (!CheckAccountAllowed(AccountType.Premium, out string message))
+            if (_token == null)
             {
-                return new GoFileResponse<IContent>() { Status = message};
+                return new GoFileResponse<IContent>() { Status = "A token is required for this call"};
             }
             
             var contentRequest = GoFileRequest.GetContents(_token, contentId, noCache, passwordHash);
@@ -297,7 +242,6 @@ namespace GoFileSharp.Controllers
         /// <remarks>This call requires a GoFile Standard account or higher</remarks>
         public async Task<GoFileResponse<AccountId>> GetAccountId()
         {
-            // we need the id to get the account details / tier, so only checking to make sure a token is provided here
             if (_token == null)
             {
                 return new GoFileResponse<AccountId>() { Status = "A token is required for this call" };
@@ -323,7 +267,6 @@ namespace GoFileSharp.Controllers
         /// <remarks>This call requires a GoFile Standard account or higher</remarks>
         public async Task<GoFileResponse<AccountDetails>> GetAccountDetails(string? accountId = null)
         {
-            // we need to get the account details / tier, so only checking to make sure a token is provided here
             if (_token == null)
             {
                 return new GoFileResponse<AccountDetails>() { Status = "A token is required for this call" };
@@ -362,9 +305,9 @@ namespace GoFileSharp.Controllers
         /// <remarks>This call requires a GoFile Standard account or higher</remarks>
         public async Task<GoFileResponse<FolderData>> CreateFolder(string parentFolderId, string? folderName = null)
         {
-            if (!CheckAccountAllowed(AccountType.Standard, out string message))
+            if (_token == null)
             {
-                return new GoFileResponse<FolderData>() { Status = message };
+                return new GoFileResponse<FolderData>() { Status = "A token is required for this call"};
             }
             
             var createFolderRequest = GoFileRequest.CreateFolder(_token, parentFolderId, folderName);
@@ -388,9 +331,9 @@ namespace GoFileSharp.Controllers
         /// <remarks>This call requires a GoFile Premium account or higher.</remarks>
         public async Task<GoFileResponse<object>> CopyContent(string[] contentIds, string destinationFolderId)
         {
-            if (!CheckAccountAllowed(AccountType.Premium, out string message))
+            if (_token == null)
             {
-                return new GoFileResponse<object>() { Status = message };
+                return new GoFileResponse<object>() { Status = "A token is required for this call"};
             }
             
             var copyRequest = GoFileRequest.CopyContents(_token, contentIds, destinationFolderId);
@@ -413,9 +356,9 @@ namespace GoFileSharp.Controllers
         /// <remarks>This call requires a GoFile Standard account or higher</remarks>
         public async Task<GoFileResponse<Dictionary<string, DeleteInfo>>> DeleteContent(string[] contentIds)
         {
-            if (!CheckAccountAllowed(AccountType.Standard, out string message))
+            if (_token == null)
             {
-                return new GoFileResponse<Dictionary<string, DeleteInfo>>() { Status = message };
+                return new GoFileResponse<Dictionary<string, DeleteInfo>>() { Status = "A token is required for this call"};
             }
             
             var deleteRequest = GoFileRequest.DeleteContent(_token, contentIds);
@@ -439,9 +382,9 @@ namespace GoFileSharp.Controllers
         /// <remarks>This call requires a GoFile Standard account or higher</remarks>
         public async Task<GoFileResponse<object>> UpdateContent(string contentId, IContentOption option)
         {
-            if (!CheckAccountAllowed(AccountType.Standard, out string message))
+            if (_token == null)
             {
-                return new GoFileResponse<object>() { Status = message };
+                return new GoFileResponse<object>() { Status = "A token is required for this call"};
             }
             
             var setOptionRequset = GoFileRequest.UpdateContent(_token, contentId, option.OptionName, option.Value);
@@ -476,9 +419,9 @@ namespace GoFileSharp.Controllers
         /// <remarks>This call requires a GoFile Premium account or higher</remarks>
         public async Task<GoFileResponse<DirectLink>> AddDirectLink(string contentId, DirectLinkOptions? options = null)
         {
-            if (!CheckAccountAllowed(AccountType.Premium, out string message))
+            if (_token == null)
             {
-                return new GoFileResponse<DirectLink>() { Status = message };
+                return new GoFileResponse<DirectLink>() { Status = "A token is required for this call"};
             }
             
             var addLinkRequest = GoFileRequest.CreateDirectLink(_token, contentId, options?.ExpireTime?.ToUnixTimeSeconds(),
@@ -504,9 +447,9 @@ namespace GoFileSharp.Controllers
         /// <remarks>This call requires a GoFile Premium account or higher</remarks>
         public async Task<GoFileResponse<DirectLink>> UpdateDirectLink(string contentId, string directLinkId, DirectLinkOptions options)
         {
-            if (!CheckAccountAllowed(AccountType.Premium, out string message))
+            if (_token == null)
             {
-                return new GoFileResponse<DirectLink>() { Status = message };
+                return new GoFileResponse<DirectLink>() { Status = "A token is required for this call"};
             }
             
             var updateLinkRequest = GoFileRequest.UpdateDirectLink(_token, contentId, directLinkId, options.ExpireTime?.ToUnixTimeSeconds(), 
@@ -532,9 +475,9 @@ namespace GoFileSharp.Controllers
         /// <remarks>This call requires a GoFile Premium account or higher</remarks>
         public async Task<GoFileResponse<object>> RemoveDirectLink(string contentId, string directLinkId)
         {
-            if (CheckAccountAllowed(AccountType.Premium, out string message))
+            if (_token == null)
             {
-                return new GoFileResponse<object>() { Status = message };
+                return new GoFileResponse<object>() { Status = "A token is required for this call"};
             }
             
             var deleteLinkRequest = GoFileRequest.DeleteDirectLink(_token, contentId, directLinkId);
