@@ -142,10 +142,10 @@ namespace GoFileSharp.Controllers
         /// <param name="noCache">Whether or not to use GoFile's cache</param>
         /// <param name="passwordHash">The SHA256 password hash to use if the content is password protected</param>
         /// <returns>Returns the response from GoFile with the content info or null</returns>
-        /// <remarks>This call requires a GoFile Standard account or higher</remarks>
+        /// <remarks>This call requires a GoFile Premium account or higher</remarks>
         public async Task<GoFileResponse<IContent>> GetContentAsync(string contentId, bool noCache = false, string? passwordHash = null)
         {
-            if (!CheckAccountAllowed(AccountType.Standard, out string message))
+            if (!CheckAccountAllowed(AccountType.Premium, out string message))
             {
                 return new GoFileResponse<IContent>() { Status = message};
             }
