@@ -21,24 +21,24 @@ namespace GoFileSharp
 
         public GoFile(GoFileOptions? options = null)
         {
-            if (options == null)
-                return;
-
-            _options = options;
+            if (options != null)
+            {     
+              _options = options;
+            }
             
-            _api = GoFileController.Init(options.ApiToken);
+            _api = GoFileController.Init(_options.ApiToken);
         }
 
         /// <summary>
         /// Get <see cref="IContent"/> from an ID
         /// </summary>
         /// <param name="contentId">The content ID to try and get</param>
-        /// <param name="noCache">Wheather or not to use GoFile cache with this request</param>
+        /// <param name="noCache">Whether or not to use GoFile cache with this request</param>
         /// <param name="passwordHash">The SHA256 hash of the password to use for password protected content</param>
         /// <returns>Returns content of the id</returns>
         private async Task<IContent?> GetContentAsync(string contentId, bool noCache = false, string? passwordHash = null)
         {
-            var response = await _api.GetContentAsync(contentId, _options.ApiToken, noCache, passwordHash);
+            var response = await _api.GetContentAsync(contentId, noCache, passwordHash);
 
             if(response is { IsOK: true, Data: { } data })
             {
@@ -55,7 +55,7 @@ namespace GoFileSharp
         /// Get a folder object from an ID
         /// </summary>
         /// <param name="contentId"></param>
-        /// <param name="noCache">Wheather or not to use GoFile cache with this request</param>
+        /// <param name="noCache">Whether or not to use GoFile cache with this request</param>
         /// <param name="passwordHash">The SHA256 hash of the password to use for password protected content</param>
         /// <returns></returns>
         public async Task<GoFileFolder?> GetFolderAsync(string contentId, bool noCache = false, string? passwordHash = null)
@@ -88,7 +88,7 @@ namespace GoFileSharp
         // }
         
         /// <summary>
-        /// Upload a file to Gofile
+        /// Upload a file to GoFile
         /// </summary>
         /// <param name="file">The file to upload</param>
         /// <param name="progress">The progress object to use with the upload for progress updates</param>
@@ -97,14 +97,14 @@ namespace GoFileSharp
         /// <remarks>If the preferred zone option was set, the upload will use a server in that zone</remarks>
         public async Task<GoFileFile?> UploadFileAsync(FileInfo file, IProgress<double> progress = null, string folderId = null)
         {
-            var uploadResponse = await _api.UploadFileAsync(file, _options.PreferredZone, _options.ApiToken, progress, folderId);
+            var uploadResponse = await _api.UploadFileAsync(file, _options.PreferredZone, progress, folderId);
 
             if(!uploadResponse.IsOK || uploadResponse.Data == null)
             {
                 return null;
             }
 
-            return await GoFileHelper.TryGetUplaodedFile(uploadResponse.Data, _options, _api);
+            return await GoFileHelper.TryGetUplaodedFile(uploadResponse.Data, _api);
         }
 
         /// <summary>
@@ -113,7 +113,7 @@ namespace GoFileSharp
         /// <returns>Returns your account details</returns>
         public async Task<AccountDetails?> GetMyAccountAsync()
         {
-            var accountResponse = await _api.GetAccountDetails(_options.ApiToken);
+            var accountResponse = await _api.GetAccountDetails();
 
             return accountResponse.Data;
         }
@@ -124,7 +124,7 @@ namespace GoFileSharp
         /// <returns>Returns the root folder</returns>
         public async Task<GoFileFolder?> GetMyRootFolderAsync()
         {
-            var accountDetailsResponse = await _api.GetAccountDetails(_options.ApiToken);
+            var accountDetailsResponse = await _api.GetAccountDetails();
 
             if(!accountDetailsResponse.IsOK || accountDetailsResponse.Data == null)
             {
